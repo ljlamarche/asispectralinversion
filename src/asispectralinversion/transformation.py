@@ -219,7 +219,6 @@ def feed_data(dtdate, foi_0428, foi_0558, foi_0630, folder, output_file, method=
     
     # regularize data
     grid_lon, grid_lat, Q_reg, E0_reg, SigP_reg, SigH_reg = regularize_data(dtdate, maglon_dec, maglat_dec, Q_smooth, E0_smooth, SigP_smooth, SigH_smooth)
-    print(grid_lon.shape, grid_lat.shape, maglon_dec.shape, maglat_dec.shape)
 
     # write output file
     write_output(dtdate, grid_lon, grid_lat, Q_reg, E0_reg, SigP_reg, SigH_reg, maglon_dec, maglat_dec, Q_smooth, E0_smooth, SigP_smooth, SigH_smooth, output_file)
