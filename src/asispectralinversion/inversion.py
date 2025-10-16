@@ -103,6 +103,7 @@ def calculate_E0_Q_v2(redbright,greenbright,bluebright,inlookup_table,minE0=150,
         - the 'generous' option sets Q, E0 to zero instead of NaN when inversion fails but certain conditions are met (very dim pixels)
     """
 
+    print("ADJUST LOOKUP TABLES")
     # Subtract out background brightnesses from the lookup table:
     # This was a shallow copy!!! We must replace it with a deep copy
     #lookup_table = inlookup_table.copy()
@@ -113,25 +114,30 @@ def calculate_E0_Q_v2(redbright,greenbright,bluebright,inlookup_table,minE0=150,
     
     # Save the initial shape of arrays - they will be flattened and later reshaped back to this
     shape = greenbright.shape
+    print('ARRAY SHAPE: ', shape)
 
+    print('RESHAPING ARRAYS')
     # Reshape brightness arrays to vectors
     redvec = redbright.reshape(-1)
     greenvec = greenbright.reshape(-1)
     bluevec = bluebright.reshape(-1)
 
+    print('CUTOFF LOOKUP TABLE')
     # Cut off the lookup table appropriately
     minE0ind = np.where(lookup_table['E0vec']>minE0)[0][0]
     
+    print('ESTIMATE Q')
     # Estimates Q from blue brightness, along with error bars
     qvec, maxqvec, minqvec = q_interp(lookup_table['bluemat'], lookup_table['Qvec'], lookup_table['E0vec'], bluevec, minE0ind=minE0ind, maxbluebright='auto', interp='linear', plot=plot)
 
+    print('ESTIMATE E0')
     # Estimates E0 from red/green ratio and estimated Q value
     e0vec = e0_interp_general(lookup_table['redmat'] / lookup_table['greenmat'], lookup_table['Qvec'], lookup_table['E0vec'], (redvec / greenvec), qvec)
-    e0vecext1 = e0_interp_general(lookup_table['redmat'] / lookup_table['greenmat'], lookup_table['Qvec'], lookup_table['E0vec'], (redvec / greenvec), maxqvec)
-    e0vecext2 = e0_interp_general(lookup_table['redmat'] / lookup_table['greenmat'], lookup_table['Qvec'], lookup_table['E0vec'], (redvec / greenvec), minqvec)
-
-    mine0vec = np.minimum(e0vecext1, e0vecext2)
-    maxe0vec = np.maximum(e0vecext1, e0vecext2)
+#    e0vecext1 = e0_interp_general(lookup_table['redmat'] / lookup_table['greenmat'], lookup_table['Qvec'], lookup_table['E0vec'], (redvec / greenvec), maxqvec)
+#    e0vecext2 = e0_interp_general(lookup_table['redmat'] / lookup_table['greenmat'], lookup_table['Qvec'], lookup_table['E0vec'], (redvec / greenvec), minqvec)
+#
+#    mine0vec = np.minimum(e0vecext1, e0vecext2)
+#    maxe0vec = np.maximum(e0vecext1, e0vecext2)
 
     if generous:
         qvec[np.where(bluevec<np.amin(lookup_table['bluemat']))] = 0
@@ -347,7 +353,7 @@ def process_sig3dbin(fname):
         return params, Qvec, E0vec, altvec, sig3d
  
      
-def q_interp(bright428 ,Qvec, E0vec, bluevec, minE0ind=0, maxbluebright='auto', interp='linear', plot=True):
+def q_interp(bright428, Qvec, E0vec, bluevec, minE0ind=0, maxbluebright='auto', interp='linear', plot=True):
     """
     Purpose: 
         - uses a GLOW lookup table to estimate Q from blue-line brightness
@@ -358,6 +364,7 @@ def q_interp(bright428 ,Qvec, E0vec, bluevec, minE0ind=0, maxbluebright='auto', 
         - the Q interpolation has a built-in routine to estimate the max blue brightness that works well
         - this function recursively calls itself (once), when used with the 'auto' parameter for maxbluebright
     """
+    # NOTE: Some of the plotting in this function causes the program to crash when it's run without sufficient decimation.  These plots have been commented out.  Can be uncommented if needed for debugging.
     
     # Automatically estimate where the inversion table "runs out of room" for very bright blue values
     if maxbluebright == 'auto':
@@ -376,6 +383,7 @@ def q_interp(bright428 ,Qvec, E0vec, bluevec, minE0ind=0, maxbluebright='auto', 
             plt.title('Max possible Q, ceiling hit in red')
             plt.xlabel('blue brightness')
             plt.show()
+
     
     # Initialize vector of Q values
     qvec = []
@@ -426,21 +434,22 @@ def q_interp(bright428 ,Qvec, E0vec, bluevec, minE0ind=0, maxbluebright='auto', 
             else:
                 maxqvec.append(np.amax(qcross))
             minqvec.append(np.amin(qcross))
-            # Plot the curves of possible Q solutions for each data point.
-            # For large-dimensional input, this gets busy/useless/slow pretty fast!
-            if plot:
-                plt.plot(qcross,e0cross)
-                plt.scatter(qcross[-1],e0cross[np.argmin(np.abs(qcross-qcross[-1]))],color='black',s=50)
+            ## Plot the curves of possible Q solutions for each data point.
+            ## For large-dimensional input, this gets busy/useless/slow pretty fast!
+            #if plot:
+            #    plt.plot(qcross,e0cross)
+            #    plt.scatter(qcross[-1],e0cross[np.argmin(np.abs(qcross-qcross[-1]))],color='black',s=50)
         # If no good solution was found
         else:
             qvec.append(np.nan)
             maxqvec.append(np.nan)
             minqvec.append(np.nan)
 
-    # Plot the minimum value of E0 considered for the inversion
-    if plot:
-        plt.plot([Qvec[0],Qvec[-1]],[E0vec[minE0ind],E0vec[minE0ind]],color='black',linewidth=5)
-        plt.title('Solution sets for a given blue line brightness ')
+    ## Plot the minimum value of E0 considered for the inversion
+    #if plot:
+    #    plt.plot([Qvec[0],Qvec[-1]],[E0vec[minE0ind],E0vec[minE0ind]],color='black',linewidth=5)
+    #    plt.title('Solution sets for a given blue line brightness ')
+    #    plt.show()
 
     return np.asarray(qvec),np.asarray(maxqvec),np.asarray(minqvec)
     
