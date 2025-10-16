@@ -129,9 +129,9 @@ def prepare_data(dtdate, redimgs, greenimgs, blueimgs, skymap_file, blur_deg_EW=
 
 
     # Calculate background brightness
-    bluebgbright, sig = background_brightness(blueimcoadd, bmask, plot=plot)
-    greenbgbright, sig = background_brightness(greenimcoadd, gmask, plot=plot)
-    redbgbright, sig = background_brightness(redimcoadd, rmask, plot=plot)
+    bluebgbright, sig = background_brightness(blueimcoadd, bmask, background_method=background_method, plot=plot)
+    greenbgbright, sig = background_brightness(greenimcoadd, gmask, background_method=background_method, plot=plot)
+    redbgbright, sig = background_brightness(redimcoadd, rmask, background_method=background_method, plot=plot)
 
     # Calculate new magnetic grid
 
