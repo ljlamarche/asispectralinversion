@@ -205,16 +205,16 @@ def prepare_data(dtdate, redimgs, greenimgs, blueimgs, skymap_file, blur_deg_EW=
         plt.show()
 
 
-    # Gaussian Denoise
-    blueimdenoise = gaussian_denoise(blueimdenoise, dlat, dlon, bluebgbright, EW_deg=blur_deg_EW, NS_deg=blur_deg_NS)
-
-    # Plot Gaussian Denoise Images
-    if plot:
-        plt.pcolormesh(lon0, lat0, blueimdenoise)
-        plt.title('Blue Gaussian Denoise')
-        plt.xlabel('E-W')
-        plt.ylabel('N-S')
-        plt.show()
+#    # Gaussian Denoise
+#    blueimdenoise = gaussian_denoise(blueimdenoise, dlat, dlon, bluebgbright, EW_deg=blur_deg_EW, NS_deg=blur_deg_NS)
+#
+#    # Plot Gaussian Denoise Images
+#    if plot:
+#        plt.pcolormesh(lon0, lat0, blueimdenoise)
+#        plt.title('Blue Gaussian Denoise')
+#        plt.xlabel('E-W')
+#        plt.ylabel('N-S')
+#        plt.show()
 
 
     ##########
