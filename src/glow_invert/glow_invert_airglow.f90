@@ -47,6 +47,7 @@ program glow_invert_airglow
 
   character(len=1024) :: iri90_dir
   character(len=1024) :: out_dir
+  character(len=1024) :: command
 
   real,allocatable :: z(:)                    ! glow height coordinate in km (jmax)
   real,allocatable :: zun(:), zvn(:)          ! neutral wind components (not in use)
@@ -256,6 +257,10 @@ program glow_invert_airglow
         !    call emout("data/emout.txt",28)
      enddo
   enddo
+  
+! make directory to store output files
+  command = 'mkdir -p '//trim(out_dir)//'airglow/'
+  call system(command)
   
 ! write the brigthness files out.
   !write( fout, "('output/v3/I4278_',I5.5,'_',I5.5,'.bin')"), idate, iut
