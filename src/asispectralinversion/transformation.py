@@ -83,7 +83,10 @@ def regularize_data(dtdate, maglon_dec, maglat_dec, Q_smooth, E0_smooth, SigP_sm
     # Create regular grid space
     lat_min, lat_max = geo_lat_grid.min(), geo_lat_grid.max()
     lon_min, lon_max = geo_lon_grid.min(), geo_lon_grid.max()
-    grid_lat, grid_lon = np.mgrid[lat_min:lat_max:256j, lon_min:lon_max:256j]
+    #grid_lat, grid_lon = np.mgrid[lat_min:lat_max:256j, lon_min:lon_max:256j]
+    # Make new grid same shape as decimated magnetic grids
+    lat_size, lon_size = Q_smooth.shape
+    grid_lat, grid_lon = np.meshgrid(np.linspace(lat_min, lat_max, lat_size), np.linspace(lon_min, lon_max, lon_size))
     
     # Interpolate/Regularize filtered data onto the regular grid
     geo_lat_grid_flat = geo_lat_grid.flatten()
@@ -216,6 +219,7 @@ def feed_data(dtdate, foi_0428, foi_0558, foi_0630, folder, output_file, method=
     
     # regularize data
     grid_lon, grid_lat, Q_reg, E0_reg, SigP_reg, SigH_reg = regularize_data(dtdate, maglon_dec, maglat_dec, Q_smooth, E0_smooth, SigP_smooth, SigH_smooth)
+    print(grid_lon.shape, grid_lat.shape, maglon_dec.shape, maglat_dec.shape)
 
     # write output file
     write_output(dtdate, grid_lon, grid_lat, Q_reg, E0_reg, SigP_reg, SigH_reg, maglon_dec, maglat_dec, Q_smooth, E0_smooth, SigP_smooth, SigH_smooth, output_file)
