@@ -181,6 +181,19 @@ def calculate_E0_Q_v2_RGonly(redbright,greenbright,bluebright,inlookup_table,min
     if generous:
         e0vec[np.where((redvec/greenvec) > np.amax(lookup_table['redmat']/lookup_table['greenmat']))] = 0#lookup_table['E0vec'][0]
 
+    if plot:
+        # Plot Q
+        plt.pcolormesh(qvec.reshape(shape).T)
+        plt.title('Energy Flux')
+        plt.colorbar()
+        plt.show()
+
+        # Plot E0
+        plt.pcolormesh(e0vec.reshape(shape).T)
+        plt.title('Characteristic Energy')
+        plt.colorbar()
+        plt.show()
+
     return qmat,e0vec.reshape(shape)
 
 
@@ -240,11 +253,13 @@ def calculate_Sig(q,e0,lookup_table,generous=False, plot=True):
         # Plot SigP
         plt.pcolormesh(SigPout.reshape(shape).T)
         plt.title('Pedersen Conductance')
+        plt.colorbar()
         plt.show()
 
         # Plot E0
         plt.pcolormesh(SigHout.reshape(shape).T)
         plt.title('Hall Conductance')
+        plt.colorbar()
         plt.show()
 
     return SigPout.reshape(shape),SigHout.reshape(shape)
@@ -491,6 +506,7 @@ def q_interp_constrained(bright428,minE0vec,maxE0vec,Qvec,E0vec,bluevec,backupmi
 #     GLOW by a factor of 2. Higher cutoffs discard more points, lower ones discard less
 # plot: set to True to include diagnostic plots
 def q_interp_RG(bright630,bright558,bright428,Qvec,E0vec,redbright,greenbright,bluebright,checkagreement=True,cutoffgoodness=0.3,plot=True):
+    print('Q_INTERP_RG')
     # A new coordinate system for R,G,B brightness
     def newcoords(r,g,b):
         newx = (np.log(g) - np.log(r))
@@ -559,7 +575,9 @@ def q_interp_RG(bright630,bright558,bright428,Qvec,E0vec,redbright,greenbright,b
     # Evaluate function on data
     Qdata = Qinterp(np.asarray([np.log(redbright).reshape(-1),np.log(greenbright).reshape(-1)]).T).reshape(newxdata.shape)
     
-    if plot & len(Qdata.shape)>1:
+    print('QDATA', Qdata.shape, Qdata.size)
+    #if plot & len(Qdata.shape)>1:
+    if plot:
         print('Qdata shape='+str(Qdata.shape))
         plt.pcolormesh(Qdata,vmin=0,vmax=12)
         plt.colorbar()
@@ -634,20 +652,22 @@ def q_interp_RG(bright630,bright558,bright428,Qvec,E0vec,redbright,greenbright,b
             plt.ylabel('log(green/blue)')
             plt.show()
             
-            if len(Qdata.shape)>1:
-                plt.pcolormesh(1-distdata,vmin=cutoffgoodness,cmap='plasma')
-                plt.title('goodness of agreement with GLOW')
-                plt.colorbar()
-                plt.show()
+            #if len(Qdata.shape)>1:
+            plt.pcolormesh(1-distdata,vmin=cutoffgoodness,cmap='plasma')
+            plt.title('goodness of agreement with GLOW')
+            plt.colorbar()
+            plt.show()
         
-        # Mask out regions where data are inconsistent with GLOW
-        badrange = np.where( ((1-distdata) < cutoffgoodness) | np.isnan(bluebright+distdata) )
-        Qdata[badrange] = np.nan
+        ## Mask out regions where data are inconsistent with GLOW
+        #badrange = np.where( ((1-distdata) < cutoffgoodness) | np.isnan(bluebright+distdata) )
+        #Qdata[badrange] = np.nan
         
-        if plot & len(Qdata.shape)>1:
+        #if plot & len(Qdata.shape)>1:
+        if plot:
             plt.pcolormesh(Qdata,vmin=0,vmax=20)
             plt.title('Q, trustable')
             plt.colorbar()
+            plt.show()
     return Qdata
 
 

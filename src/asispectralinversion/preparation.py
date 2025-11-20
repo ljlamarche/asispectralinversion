@@ -137,14 +137,23 @@ def prepare_data(dtdate, redimgs, greenimgs, blueimgs, skymap_file, blur_deg_EW=
 
     # Map everything to magnetic coordinates?
     A = Apex(date = dtdate)
-    bmlat, bmlon = A.geo2apex(skymapblue[0], skymapblue[1], height=107)
-    gmlat, gmlon = A.geo2apex(skymapgreen[0], skymapgreen[1], height=110)
-    rmlat, rmlon = A.geo2apex(skymapred[0], skymapred[1], height=180)
+#    bmlat, bmlon = A.geo2apex(skymapblue[0], skymapblue[1], height=107)
+#    gmlat, gmlon = A.geo2apex(skymapgreen[0], skymapgreen[1], height=110)
+#    rmlat, rmlon = A.geo2apex(skymapred[0], skymapred[1], height=180)
+    bmlat, bmlon = skymapblue
+    gmlat, gmlon = skymapgreen
+    rmlat, rmlon = skymapred
 
     # Define common, regular grid
     gridmlat, gridmlon = common_grid(bmlat, bmlon, gmlat, gmlon, rmlat, rmlon)
     # Footpoint new grid (this is ONLY needed for the internal plotting done in this function)
     lat0, lon0, _ = A.apex2geo(gridmlat, gridmlon, height=110)
+
+    print(gridmlat.shape, gridmlon.shape)
+    fig, (ax1, ax2) = plt.subplots(1,2)
+    ax1.pcolormesh(gmlat)
+    ax2.pcolormesh(gmlon)
+    plt.show()
 
 
     # Interpolate images to new magnetic grid
