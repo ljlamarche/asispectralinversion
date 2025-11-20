@@ -137,9 +137,12 @@ def prepare_data(dtdate, redimgs, greenimgs, blueimgs, skymap_file, blur_deg_EW=
 
     # Map everything to magnetic coordinates?
     A = Apex(date = dtdate)
-    bmlat, bmlon = A.geo2apex(skymapblue[0], skymapblue[1], height=107)
-    gmlat, gmlon = A.geo2apex(skymapgreen[0], skymapgreen[1], height=110)
-    rmlat, rmlon = A.geo2apex(skymapred[0], skymapred[1], height=180)
+    #bmlat, bmlon = A.geo2apex(skymapblue[0], skymapblue[1], height=107)
+    #gmlat, gmlon = A.geo2apex(skymapgreen[0], skymapgreen[1], height=110)
+    #rmlat, rmlon = A.geo2apex(skymapred[0], skymapred[1], height=180)
+    bmlat, bmlon = skymapblue
+    gmlat, gmlon = skymapgreen
+    rmlat, rmlon = skymapred
 
     # Define common, regular grid
     gridmlat, gridmlon = common_grid(bmlat, bmlon, gmlat, gmlon, rmlat, rmlon)
