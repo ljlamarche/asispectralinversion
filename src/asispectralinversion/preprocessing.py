@@ -63,7 +63,7 @@ def gauss(x, A, x0, sigma):
     return A * np.exp(-(x - x0) ** 2 / (2 * sigma ** 2))
 
 
-def background_brightness_darkpatches(im, mask):
+def background_brightness_darkpatches(im0, mask):
     """
     Purpose: 
         - given an unmapped image, finds dark patches of sky to estimate background brightness
@@ -77,6 +77,7 @@ def background_brightness_darkpatches(im, mask):
     """
 
     # Make masked part of image NaN
+    im = im0.copy()    # Nessisary or the original image in the calling routine will end up masked??
     im[mask] = np.nan
     
     # First, break the image up into patches:
@@ -172,6 +173,7 @@ def background_brightness(im, mask, background_method='patches', plot=True):
 
     except Exception as e:
         print('Fit failed! Failed at {e}')
+        fitfailed = True
         cent = centerguess
         sig = sigguess
             
@@ -247,7 +249,7 @@ def gaussian_denoise(im, dlat, dlon, bgbright, EW_deg=0, NS_deg=0):
     return regimblur
 
 
-def wavelet_denoise(im, dlat, dlon, bgbright, nshifts=50):
+def wavelet_denoise(im, bgbright, nshifts=50):
     """
     Purpose: 
         - denoising is done through Bayesian thresholding of a nearly shift-invariant discrete wavelet transform
@@ -276,12 +278,43 @@ def wavelet_denoise(im, dlat, dlon, bgbright, nshifts=50):
     # Denoise
     imdenoise = cycle_spin(ridnfill, func = denoise_wavelet, max_shifts = nshifts)
    
-    # Perform small gaussian blur
-    regimblur = scipy.ndimage.gaussian_filter1d(imdenoise, 0.1 / dlon, axis = 0)
-    regimblur = scipy.ndimage.gaussian_filter1d(np.copy(regimblur), 0.01 / dlat, axis = 1)
-    regimblur[np.where(np.isnan(im))] = np.nan
+    # # Perform small gaussian blur
+    # Note: The cycle_spin wavelet denoising should occur on the image prior to any mapping/regridding.
+    #    This prevents wierd artifacts due to the fact that a regular lat/lon grid can differ significantly
+    #    in km spacing at high latitudes.
+    #    This anisotropic gaussian deblurring on the other hand only makes sense if the image is rotated
+    #    such that one direction is preferential.  Not clear what coordinate system this should be applied in.
+    #
+    # regimblur = scipy.ndimage.gaussian_filter1d(imdenoise, 0.1 / dlon, axis = 0)
+    # regimblur = scipy.ndimage.gaussian_filter1d(np.copy(regimblur), 0.01 / dlat, axis = 1)
 
-    return regimblur
+    # Re-add nans
+    imdenoise[np.where(np.isnan(im))] = np.nan
+
+    return imdenoise
+
+# def wavelet_denoise2(im, bgbright, nshifts=50):
+#     """
+#     Purpose: ONLY apply the cycle spin to original image
+#     """
+    
+#     print('wavelet denoise...')
+
+#     ridnfill = np.copy(im)
+    
+#     # Fill in the region of the image that does not map to the sky with the background brightness value
+#     ridnfill[np.isnan(im)] = bgbright
+    
+#     # Denoise
+#     imdenoise = cycle_spin(ridnfill, func = denoise_wavelet, max_shifts = nshifts)
+   
+#     # # Perform small gaussian blur
+#     # regimblur = scipy.ndimage.gaussian_filter1d(imdenoise, 0.1 / dlon, axis = 0)
+#     # regimblur = scipy.ndimage.gaussian_filter1d(np.copy(regimblur), 0.01 / dlat, axis = 1)
+#     regimblur = imdenoise
+#     regimblur[np.where(np.isnan(im))] = np.nan
+
+#     return regimblur
 
     
 def to_rayleighs(redcutin,greencutin,bluecutin,redbg,greenbg,bluebg):

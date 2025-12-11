@@ -135,12 +135,14 @@ def calculate_E0_Q_v2(redbright,greenbright,bluebright,inlookup_table,minE0=150,
 
     if plot:
         # Plot Q
-        plt.pcolormesh(qvec.reshape(shape).T)
+        plt.pcolormesh(qvec.reshape(shape).T, cmap='viridis')
+        plt.colorbar()
         plt.title('Energy Flux')
         plt.show()
 
         # Plot E0
-        plt.pcolormesh(qvec.reshape(shape).T)
+        plt.pcolormesh(qvec.reshape(shape).T, cmap='magma')
+        plt.colorbar()
         plt.title('Characteristic Energy')
         plt.show()
 
@@ -252,12 +254,14 @@ def calculate_Sig(q,e0,lookup_table,generous=False, plot=True):
     if plot:
         # Plot SigP
         plt.pcolormesh(SigPout.reshape(shape).T)
+        plt.colorbar()
         plt.title('Pedersen Conductance')
         plt.colorbar()
         plt.show()
 
         # Plot E0
         plt.pcolormesh(SigHout.reshape(shape).T)
+        plt.colorbar()
         plt.title('Hall Conductance')
         plt.colorbar()
         plt.show()

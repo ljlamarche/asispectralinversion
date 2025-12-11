@@ -73,6 +73,27 @@ def prepare_data(dtdate, redimgs, greenimgs, blueimgs, skymap_file, blur_deg_EW=
             blueims.append(np.array(img))
 
 
+    # Coadd images
+    redimcoadd = sum(redims)/len(redims)
+    greenimcoadd = sum(greenims)/len(greenims)
+    blueimcoadd = sum(blueims)/len(blueims)
+
+    # Plot coadded images
+    if plot:
+        plt.imshow(redimcoadd, cmap='Reds')
+        plt.title('Red Imagery')
+        plt.show()
+        
+        plt.imshow(greenimcoadd, cmap='Greens')
+        plt.title('Green Imagery')
+        plt.show()
+        
+        plt.imshow(blueimcoadd, cmap='Blues')
+        plt.title('Blue Imagery')
+        plt.show()
+
+    # Dark Frame subtraction nominally occurs here??
+    
     # Load skymap file
     with h5py.File(skymap_file, 'r') as h5:
         skymapred = [h5['/magnetic_footpointing/180km/lat'][:],
@@ -81,46 +102,6 @@ def prepare_data(dtdate, redimgs, greenimgs, blueimgs, skymap_file, blur_deg_EW=
                        h5['/magnetic_footpointing/110km/lon'][:]]
         skymapblue = [h5['/magnetic_footpointing/107km/lat'][:],
                       h5['/magnetic_footpointing/107km/lon'][:]]
-
-    # Coadd images
-    redimcoadd = sum(redims)/len(redims)
-    greenimcoadd = sum(greenims)/len(greenims)
-    blueimcoadd = sum(blueims)/len(blueims)
-
-    # Plot coadded images
-    if plot:
-        plt.imshow(redimcoadd)
-        plt.title('Red Imagery')
-        plt.xlabel('E-W')
-        plt.ylabel('N-S')
-        plt.show()
-        #red_fn = 'red_imagery.png'
-        ##red_out = os.path.join(group_outdir, red_fn)
-        #plt.savefig(red_fn)
-        #plt.close()
-        
-        plt.imshow(greenimcoadd)
-        plt.title('Green Imagery')
-        plt.xlabel('E-W')
-        plt.ylabel('N-S')
-        plt.show()
-        #green_fn = 'green_imagery.png'
-        ##green_out = os.path.join(group_outdir, green_fn)
-        #plt.savefig(green_fn)
-        #plt.close()
-        
-        plt.imshow(blueimcoadd)
-        plt.title('Blue Imagery')
-        plt.xlabel('E-W')
-        plt.ylabel('N-S')
-        #blue_fn = 'blue_imagery.png'
-        ##blue_out = os.path.join(group_outdir, blue_fn)
-        #plt.savefig(blue_fn)
-        #plt.close()
-
-        plt.show()
-
-
 
     # Define masks where image not defined
     bmask = np.isnan(skymapblue[0])
@@ -133,86 +114,65 @@ def prepare_data(dtdate, redimgs, greenimgs, blueimgs, skymap_file, blur_deg_EW=
     greenbgbright, sig = background_brightness(greenimcoadd, gmask, background_method=background_method, plot=plot)
     redbgbright, sig = background_brightness(redimcoadd, rmask, background_method=background_method, plot=plot)
 
-    # Calculate new magnetic grid
+    
+    # Wavelet Denoise
+    blueimdenoise = wavelet_denoise(blueimcoadd, bluebgbright, nshifts=nshifts)
+    greenimdenoise = wavelet_denoise(greenimcoadd, greenbgbright, nshifts=nshifts)
+    redimdenoise = wavelet_denoise(redimcoadd, redbgbright, nshifts=nshifts)
 
-    # Map everything to magnetic coordinates?
-    A = Apex(date = dtdate)
-#    bmlat, bmlon = A.geo2apex(skymapblue[0], skymapblue[1], height=107)
-#    gmlat, gmlon = A.geo2apex(skymapgreen[0], skymapgreen[1], height=110)
-#    rmlat, rmlon = A.geo2apex(skymapred[0], skymapred[1], height=180)
-    bmlat, bmlon = skymapblue
-    gmlat, gmlon = skymapgreen
-    rmlat, rmlon = skymapred
+    # Plot Wavelet Denoise Images
+    if plot:
+        plt.imshow(redimdenoise, cmap='Reds')
+        plt.title('Red Wavelet Denoise')
+        plt.show()
+        
+        plt.imshow(greenimdenoise, cmap='Greens')
+        plt.title('Green Wavelet Denoise')
+        plt.show()
+        
+        plt.imshow(blueimdenoise, 'Blues')
+        plt.title('Blue Wavelet Denoise')
+        plt.show()
 
+
+    
     # Define common, regular grid
-    gridmlat, gridmlon = common_grid(bmlat, bmlon, gmlat, gmlon, rmlat, rmlon)
-    # Footpoint new grid (this is ONLY needed for the internal plotting done in this function)
-    lat0, lon0, _ = A.apex2geo(gridmlat, gridmlon, height=110)
+    blat, blon = skymapblue
+    glat, glon = skymapgreen
+    rlat, rlon = skymapred
 
-    print(gridmlat.shape, gridmlon.shape)
-    fig, (ax1, ax2) = plt.subplots(1,2)
-    ax1.pcolormesh(gmlat)
-    ax2.pcolormesh(gmlon)
-    plt.show()
+    gridlat, gridlon = common_grid(blat, blon, glat, glon, rlat, rlon)
 
-
-    # Interpolate images to new magnetic grid
-    blueimreg = interpolate_reggrid(blueimcoadd, bmlon, bmlat, gridmlon, gridmlat)
-    greenimreg = interpolate_reggrid(greenimcoadd, gmlon, gmlat, gridmlon, gridmlat)
-    redimreg = interpolate_reggrid(redimcoadd, rmlon, rmlat, gridmlon, gridmlat)
+    # Interpolate images to new common grid
+    blueimreg = interpolate_reggrid(blueimdenoise, blon, blat, gridlon, gridlat)
+    greenimreg = interpolate_reggrid(greenimdenoise, glon, glat, gridlon, gridlat)
+    redimreg = interpolate_reggrid(redimdenoise, rlon, rlat, gridlon, gridlat)
 
 
     # Plot Regridded Images
     if plot:
-        plt.pcolormesh(lon0, lat0, redimreg)
+        plt.pcolormesh(gridlon, gridlat, redimreg, cmap='Reds')
         plt.title('Red Regrid')
         plt.xlabel('E-W')
         plt.ylabel('N-S')
         plt.show()
         
-        plt.pcolormesh(lon0, lat0, greenimreg)
+        plt.pcolormesh(gridlon, gridlat, greenimreg, cmap='Greens')
         plt.title('Green Regrid')
         plt.xlabel('E-W')
         plt.ylabel('N-S')
         plt.show()
         
-        plt.pcolormesh(lon0, lat0, blueimreg)
+        plt.pcolormesh(gridlon, gridlat, blueimreg, cmap='Blues')
         plt.title('Blue Regrid')
         plt.xlabel('E-W')
         plt.ylabel('N-S')
         plt.show()
 
 
-    # Grid steps for our new footpointed grid - the new grid is very nearly Cartesian in footlat/footlon
-    dlon = np.mean(np.diff(gridmlon, axis=0))
-    dlat = np.mean(np.diff(gridmlat, axis=1))
-
-
-    # Wavelet Denoise
-    blueimdenoise = wavelet_denoise(blueimreg, dlat, dlon, bluebgbright, nshifts=nshifts)
-    greenimdenoise = wavelet_denoise(greenimreg, dlat, dlon, greenbgbright, nshifts=nshifts)
-    redimdenoise = wavelet_denoise(redimreg, dlat, dlon, redbgbright, nshifts=nshifts)
-
-    # Plot Wavelet Denoise Images
-    if plot:
-        plt.pcolormesh(lon0, lat0, redimdenoise)
-        plt.title('Red Wavelet Denoise')
-        plt.xlabel('E-W')
-        plt.ylabel('N-S')
-        plt.show()
-        
-        plt.pcolormesh(lon0, lat0, greenimdenoise)
-        plt.title('Green Wavelet Denoise')
-        plt.xlabel('E-W')
-        plt.ylabel('N-S')
-        plt.show()
-        
-        plt.pcolormesh(lon0, lat0, blueimdenoise)
-        plt.title('Blue Wavelet Denoise')
-        plt.xlabel('E-W')
-        plt.ylabel('N-S')
-        plt.show()
-
+    # # Grid steps for our new footpointed grid - the new grid is very nearly Cartesian in footlat/footlon
+    # dlon = np.mean(np.diff(gridmlon, axis=0))
+    # dlat = np.mean(np.diff(gridmlat, axis=1))
 
 #    # Gaussian Denoise
 #    blueimdenoise = gaussian_denoise(blueimdenoise, dlat, dlon, bluebgbright, EW_deg=blur_deg_EW, NS_deg=blur_deg_NS)
@@ -226,77 +186,92 @@ def prepare_data(dtdate, redimgs, greenimgs, blueimgs, skymap_file, blur_deg_EW=
 #        plt.show()
 
 
-    ##########
-    ngreen = (1 / np.std(greenimreg[np.where(~np.isnan(greenimreg))])) ** (6.5 / 8)
-    nred = (1 / np.std(redimreg[np.where(~np.isnan(redimreg))])) ** (6.5 / 8)
-    nblue = (1 / np.std(blueimreg[np.where(~np.isnan(blueimreg))])) ** (6.5 / 8)
+    # Convert to Rayleighs
+    redray,greenray,blueray = to_rayleighs(redimreg, greenimreg, blueimreg, redbgbright, greenbgbright, bluebgbright)
 
-    greenframe = np.copy(greenimreg)
-    greenframe[np.where(np.isnan(greenframe))] = greenbgbright
-
-    blueframe = np.copy(blueimreg)
-    blueframe[np.where(np.isnan(blueframe))] = bluebgbright
-
-    redframe = np.copy(redimreg)
-    redframe[np.where(np.isnan(redframe))] = redbgbright
-
-    greenmin = np.amin(greenframe)
-    bluemin = np.amin(blueframe)
-    redmin = np.amin(redframe)
-
-    colormat = np.asarray([nred * (redframe - redmin), ngreen * (greenframe - greenmin), nblue * (blueframe - bluemin)]).astype(float)
-    maxbright = np.amax(colormat)
-    colormat /= maxbright
-
-    if plot:
-        plt.pcolormesh(lon0, lat0, colormat.transpose(1,2,0))
-        plt.xlabel('E-W')
-        plt.ylabel('N-S')
-        plt.show()
-
-    redray, greenray, blueray = to_rayleighs(redimdenoise, greenimdenoise, blueimdenoise, redbgbright, greenbgbright, bluebgbright)
+    # NaN any invalid (negative) pixels
+    redray[np.where(redray<0)]=np.nan
+    greenray[np.where(greenray<0)]=np.nan
+    blueray[np.where(blueray<0)]=np.nan
+    badrange = np.where(np.isnan(redray+blueray+greenray))
     
-    badrange = np.where(np.isnan(redray + blueray + greenray))
     redray[badrange] = np.nan
     greenray[badrange] = np.nan
     blueray[badrange] = np.nan
 
-    negatives = np.zeros_like(blueray)
-    negatives[np.where( (redray < 0) | (blueray < 0) | (greenray < 0) )] = 1
-    negatives[np.where(np.isnan(blueray))] = np.nan
+    # Plot images in Rayleighs
+    if plot:
+        plt.pcolormesh(gridlon, gridlat, redray, vmin=0., cmap='Reds')
+        plt.colorbar(label='Rayleighs')
+        plt.title('red')
+        plt.show()
+        
+        plt.pcolormesh(gridlon, gridlat, greenray, vmin=0., cmap='Greens')
+        plt.colorbar(label='Rayleighs')
+        plt.title('green')
+        plt.show()
+        
+        plt.pcolormesh(gridlon, gridlat, blueray, vmin=0., cmap='Blues')
+        plt.colorbar(label='Rayleighs')
+        plt.title('blue')
+        plt.show()
 
-    redray[np.where(redray < 0)] = 0
-    greenray[np.where(greenray < 0)] = 0
-    blueray[np.where(blueray < 0)] = 0
+
+    # Visualize all three colors
+    if plot:
+        ngreen = (1/np.nanstd(greenray))**(6.5/8)
+        nred = (1/np.nanstd(redray))**(6.5/8)
+        nblue = (1/np.nanstd(blueray))**(6.5/8)
+        
+        greenmin = np.nanmin(greenray)
+        bluemin = np.nanmin(blueray)
+        redmin = np.nanmin(redray)
+        
+        #colormat = np.asarray([3*(redframe-redmin),(greenframe-greenmin),10*(blueframe-bluemin)]).astype(float)
+        rednorm = nred*(redray-redmin)
+        greennorm = ngreen*(greenray-greenmin)
+        bluenorm = nblue*(blueray-bluemin)
+        
+        colormat = np.array([rednorm, greennorm, bluenorm])
+        
+        maxbright = np.nanmax(colormat)
+        
+        colormat /= maxbright
+        
+        mesh = plt.pcolormesh(gridlon.T,gridlat.T,colormat.transpose((2,1,0)), shading='auto')
+        plt.xlabel('E-W')
+        plt.ylabel('N-S')
+        plt.title('mapped image, original, geodetic coords')
+        plt.show()
+
     
     print("Decimating images...")
 
     redraydec = redray[::dec, ::dec]
     blueraydec = blueray[::dec, ::dec]
     greenraydec = greenray[::dec, ::dec]
+    decgridlat = gridlat[::dec,::dec]
+    decgridlon = gridlon[::dec,::dec]
 
-    greenframe = np.copy(greenimdenoise)[::dec, ::dec]
-    greenframe[np.where(np.isnan(greenframe))] = greenbgbright
-
-    blueframe = np.copy(blueimdenoise)[::dec, ::dec]
-    blueframe[np.where(np.isnan(blueframe))] = bluebgbright
-
-    redframe = np.copy(redimdenoise)[::dec, ::dec]
-    redframe[np.where(np.isnan(redframe))] = redbgbright
-
-    colormat = np.asarray([nred * (redframe - redmin), ngreen * (greenframe - greenmin), nblue * (blueframe - bluemin)]).astype(float)
-    colormat /= maxbright
-
-    maglon_dec = gridmlon[::dec, ::dec]
-    maglat_dec = gridmlat[::dec, ::dec]
-
+    # Plot decimated image
     if plot:
-        plt.pcolormesh(maglon_dec, maglat_dec, colormat.transpose(1,2,0))
+        rednorm = nred*(redraydec-redmin)
+        greennorm = ngreen*(greenraydec-greenmin)
+        bluenorm = nblue*(blueraydec-bluemin)
+        
+        colormat = np.array([rednorm, greennorm, bluenorm])
+        
+        maxbright = np.nanmax(colormat)
+        
+        colormat /= maxbright
+        
+        mesh = plt.pcolormesh(decgridlon.T,decgridlat.T,colormat.transpose((2,1,0)), shading='auto')
+        plt.title('mapped image, decimated, geodetic coords')
         plt.xlabel('E-W')
-        plt.ylabel('N-S')
+        plt.ylabel('N-S')        
         plt.show()
 
 
-    return redraydec, greenraydec, blueraydec, maglon_dec, maglat_dec
+    return redraydec, greenraydec, blueraydec, decgridlon, decgridlat
 
 
