@@ -242,6 +242,6 @@ def process_grouped_files(tstmps, files0428, files0558, files0630, folder, base_
     for i in range(len(tstmps)):
         print(tstmps[i])
         output_name = os.path.join(base_outdir, f'asi_invert_{tstmps[i]:%Y%m%d_%H%M%S}.h5')
-        feed_data(tstmps[i], folder, files0428[i], files0558[i], files0630[i], output_name, method=method, skymap_file=skymap_file, **prep_kwarg)
+        feed_data(tstmps[i], files0428[i], files0558[i], files0630[i], folder, output_name, method=method, skymap_file=skymap_file, prep_kwarg=prep_kwarg)
  
 

@@ -67,7 +67,7 @@ def smooth_data(inarray):
 
 
 # Interpolate to a regular geodetic grid
-def regularize_data(dtdate, maglon_dec, maglat_dec, Q_smooth, E0_smooth, SigP_smooth, SigH_smooth):
+def regular_magnetic_grid(dtdate, gridlondec, gridlatdec, Q_smooth, E0_smooth, SigP_smooth, SigH_smooth):
     """
     Purpose:
           - regularizes inverted, interpolated, smoothed, and transformed ASI data onto a regularized geodetic grid
@@ -76,33 +76,33 @@ def regularize_data(dtdate, maglon_dec, maglat_dec, Q_smooth, E0_smooth, SigP_sm
     # Set up Apex object info
     apex_object = Apex(date=dtdate)
     # Perform geomagnetic to geodetic coordinate conversion for whole data set
-    geo_lat_grid, geo_lon_grid = apex_object.convert(maglat_dec, maglon_dec, 'apex', 'geo', height=110)
+    mag_lat_grid, mag_lon_grid = apex_object.convert(gridlatdec, gridlondec, 'geo', 'apex', height=110)
 
     print("Putting geodetic data onto a regular geodetic grid...")
     
     # Create regular grid space
-    lat_min, lat_max = geo_lat_grid.min(), geo_lat_grid.max()
-    lon_min, lon_max = geo_lon_grid.min(), geo_lon_grid.max()
+    lat_min, lat_max = mag_lat_grid.min(), mag_lat_grid.max()
+    lon_min, lon_max = mag_lon_grid.min(), mag_lon_grid.max()
     #grid_lat, grid_lon = np.mgrid[lat_min:lat_max:256j, lon_min:lon_max:256j]
     # Make new grid same shape as decimated magnetic grids
     lat_size, lon_size = Q_smooth.shape
     grid_lat, grid_lon = np.meshgrid(np.linspace(lat_min, lat_max, lat_size), np.linspace(lon_min, lon_max, lon_size))
     
     # Interpolate/Regularize filtered data onto the regular grid
-    geo_lat_grid_flat = geo_lat_grid.flatten()
-    geo_lon_grid_flat = geo_lon_grid.flatten()
+    mag_lat_grid_flat = mag_lat_grid.flatten()
+    mag_lon_grid_flat = mag_lon_grid.flatten()
     Q_smooth_flat = Q_smooth.flatten()
     E0_smooth_flat = E0_smooth.flatten()
     SigP_smooth_flat = SigP_smooth.flatten()
     SigH_smooth_flat = SigH_smooth.flatten()
     
-    Q_reg = griddata((geo_lat_grid_flat, geo_lon_grid_flat), Q_smooth_flat, (grid_lat, grid_lon), method='cubic')
-    E0_reg = griddata((geo_lat_grid_flat, geo_lon_grid_flat), E0_smooth_flat, (grid_lat, grid_lon), method='cubic')
-    SigP_reg = griddata((geo_lat_grid_flat, geo_lon_grid_flat), SigP_smooth_flat, (grid_lat, grid_lon), method='cubic')
-    SigH_reg = griddata((geo_lat_grid_flat, geo_lon_grid_flat), SigH_smooth_flat, (grid_lat, grid_lon), method='cubic')
+    Q_reg    = griddata((mag_lat_grid_flat, mag_lon_grid_flat), Q_smooth_flat, (grid_lat, grid_lon), method='cubic')
+    E0_reg   = griddata((mag_lat_grid_flat, mag_lon_grid_flat), E0_smooth_flat, (grid_lat, grid_lon), method='cubic')
+    SigP_reg = griddata((mag_lat_grid_flat, mag_lon_grid_flat), SigP_smooth_flat, (grid_lat, grid_lon), method='cubic')
+    SigH_reg = griddata((mag_lat_grid_flat, mag_lon_grid_flat), SigH_smooth_flat, (grid_lat, grid_lon), method='cubic')
     
-    geo_lat_grid = geo_lat_grid[~np.isnan(geo_lat_grid)]
-    geo_lon_grid = geo_lon_grid[~np.isnan(geo_lon_grid)]
+    #geo_lat_grid = geo_lat_grid[~np.isnan(geo_lat_grid)]
+    #geo_lon_grid = geo_lon_grid[~np.isnan(geo_lon_grid)]
     
     return grid_lon, grid_lat, Q_reg, E0_reg, SigP_reg, SigH_reg
 
@@ -174,7 +174,7 @@ def feed_data(dtdate, foi_0428, foi_0558, foi_0630, folder, output_file, method=
     print("Prepare Data")
 
     # Requires skymap file - site specific
-    redraydec, greenraydec, blueraydec, maglon_dec, maglat_dec = prepare_data(dtdate, foi_0630, foi_0558, foi_0428, skymap_file, plot=plot, **prep_kwarg)
+    redraydec, greenraydec, blueraydec, longriddec, latgriddec = prepare_data(dtdate, foi_0630, foi_0558, foi_0428, skymap_file, plot=plot, **prep_kwarg)
 
     # Approximate site magnetic latitude with avarage of mlat grid
 #    maglatsite = np.mean(maglat_dec)
@@ -218,10 +218,12 @@ def feed_data(dtdate, foi_0428, foi_0558, foi_0630, folder, output_file, method=
     SigH_smooth = smooth_data(SigH_filled)
     
     # regularize data
-    grid_lon, grid_lat, Q_reg, E0_reg, SigP_reg, SigH_reg = regularize_data(dtdate, maglon_dec, maglat_dec, Q_smooth, E0_smooth, SigP_smooth, SigH_smooth)
+    #grid_lon, grid_lat, Q_reg, E0_reg, SigP_reg, SigH_reg = regularize_data(dtdate, maglon_dec, maglat_dec, Q_smooth, E0_smooth, SigP_smooth, SigH_smooth)
+    maglongrid, maglatgrid, Q_mag, E0_mag, SigP_mag, SigH_mag = regular_magnetic_grid(dtdate, longriddec, latgriddec, Q_smooth, E0_smooth, SigP_smooth, SigH_smooth)
 
     # write output file
-    write_output(dtdate, grid_lon, grid_lat, Q_reg, E0_reg, SigP_reg, SigH_reg, maglon_dec, maglat_dec, Q_smooth, E0_smooth, SigP_smooth, SigH_smooth, output_file)
+    #write_output(dtdate, grid_lon, grid_lat, Q_reg, E0_reg, SigP_reg, SigH_reg, maglon_dec, maglat_dec, Q_smooth, E0_smooth, SigP_smooth, SigH_smooth, output_file)
+    write_output(dtdate, longriddec, latgriddec, Q_smooth, E0_smooth, SigP_smooth, SigH_smooth, maglongrid, maglatgrid, Q_mag, E0_mag, SigP_mag, SigH_mag, output_file)
    
     print("Returning all necessary data to funnel into Lompe and GEMINI...")
-    return dtdate, grid_lon, grid_lat, Q_reg, E0_reg, SigP_reg, SigH_reg
+    return dtdate, longriddec, latgriddec, Q_smooth, E0_smooth, SigP_smooth, SigH_smooth
