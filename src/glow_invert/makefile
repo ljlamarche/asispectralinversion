@@ -33,6 +33,9 @@ airglow: $(OBJS2)
 	$(FC) -o $(EXEC2) $(OBJS2)
 
 clean:
+	rm GLOW/*.o *.o *.mod
+
+cleanall:
 	#rm -f *.o *.mod $(EXEC)
 	rm GLOW/*.o *.o *.mod $(EXEC1) $(EXEC2)
 
