@@ -135,7 +135,7 @@ def write_output(dtdate, gdlon, gdlat, Qgd, E0gd, SigPgd, SigHgd, gmlon, gmlat, 
     
 
    
-def feed_data(dtdate, foi_0428, foi_0558, foi_0630, folder, output_file, method='rgb', skymap_file=None, plot=False, prep_kwarg=dict()):
+def feed_data(dtdate, foi_0428, foi_0558, foi_0630, folder, output_file, method='rgb', skymap_file=None, clean_output=True, plot=False, prep_kwarg=dict()):
     # This generates a SINGLE output file
     """
     Purpose:
@@ -157,6 +157,8 @@ def feed_data(dtdate, foi_0428, foi_0558, foi_0630, folder, output_file, method=
             Method to use for inversion, either 'rgb' (default) for standard method or 'rg' for only using red/green images
         skymap_file: str (optional)
             Path to skymap file when not using default (PKR)
+        clean_output: bool (optional)
+            Whether or not to interpolate and smooth output of inverstion (default=True)
         plot: bool (optional)
             Whether or not to generate intermediate plots (default=False)
         prep_kwarg: dict
@@ -198,31 +200,37 @@ def feed_data(dtdate, foi_0428, foi_0558, foi_0630, folder, output_file, method=
     SigP, SigH = calculate_Sig(qout, e0out, v, generous=True, plot=plot)
 
 
-    # Call each of the functions in this script that talk to each other internally
-    # interp_data (for NaNs)
-    Q_filled = interp_data_nans(qout)
-    E0_filled = interp_data_nans(e0out)
-    SigP_filled = interp_data_nans(SigP)
-    SigH_filled = interp_data_nans(SigH)
-    
-    # interp again (for zeros)
-    Q_filled = interp_data_zeros(Q_filled)
-    E0_filled = interp_data_zeros(E0_filled)
-    SigP_filled = interp_data_zeros(SigP_filled)
-    SigH_filled = interp_data_zeros(SigH_filled)
-    
-    # smooth_data
-    Q_smooth = smooth_data(Q_filled)
-    E0_smooth = smooth_data(E0_filled)
-    SigP_smooth = smooth_data(SigP_filled)
-    SigH_smooth = smooth_data(SigH_filled)
+    if clean_output:
+        # Interpolate and smooth to remove nans and spurious points (necessary to ingest into models)
+        # interp_data (for NaNs)
+        Q_filled = interp_data_nans(qout)
+        E0_filled = interp_data_nans(e0out)
+        SigP_filled = interp_data_nans(SigP)
+        SigH_filled = interp_data_nans(SigH)
+        
+        # interp again (for zeros)
+        Q_filled = interp_data_zeros(Q_filled)
+        E0_filled = interp_data_zeros(E0_filled)
+        SigP_filled = interp_data_zeros(SigP_filled)
+        SigH_filled = interp_data_zeros(SigH_filled)
+        
+        # smooth_data
+        Q_smooth = smooth_data(Q_filled)
+        E0_smooth = smooth_data(E0_filled)
+        SigP_smooth = smooth_data(SigP_filled)
+        SigH_smooth = smooth_data(SigH_filled)
+
+    else:
+        # Original inverted output
+        Q_smooth = qout
+        E0_smooth = e0out
+        SigP_smooth = SigP
+        SigH_smooth = SigH
     
     # regularize data
-    #grid_lon, grid_lat, Q_reg, E0_reg, SigP_reg, SigH_reg = regularize_data(dtdate, maglon_dec, maglat_dec, Q_smooth, E0_smooth, SigP_smooth, SigH_smooth)
     maglongrid, maglatgrid, Q_mag, E0_mag, SigP_mag, SigH_mag = regular_magnetic_grid(dtdate, longriddec, latgriddec, Q_smooth, E0_smooth, SigP_smooth, SigH_smooth)
 
     # write output file
-    #write_output(dtdate, grid_lon, grid_lat, Q_reg, E0_reg, SigP_reg, SigH_reg, maglon_dec, maglat_dec, Q_smooth, E0_smooth, SigP_smooth, SigH_smooth, output_file)
     write_output(dtdate, longriddec, latgriddec, Q_smooth, E0_smooth, SigP_smooth, SigH_smooth, maglongrid, maglatgrid, Q_mag, E0_mag, SigP_mag, SigH_mag, output_file)
    
     print("Returning all necessary data to funnel into Lompe and GEMINI...")
