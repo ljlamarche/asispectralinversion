@@ -169,7 +169,8 @@ def calculate_E0_Q_v2_RGonly(redbright,greenbright,bluebright,inlookup_table,min
     # Reshape brightness arrays to vectors
     redvec = redbright.reshape(-1)
     greenvec = greenbright.reshape(-1)
-    bluevec = bluebright.reshape(-1)
+    if checkagreement and bluebright is None:
+        raise ValueError('bluebright is required when checkagreement=True')
 
     # # Estimates Q from blue brightness, along with error bars
     # qvec, maxqvec, minqvec = q_interp(lookup_table['bluemat'],lookup_table['Qvec'],lookup_table['E0vec'],bluevec,minE0ind=minE0ind,maxbluebright='auto',interp='linear',plot=plot)
@@ -507,13 +508,22 @@ def q_interp_RG(bright630,bright558,bright428,Qvec,E0vec,redbright,greenbright,b
     # Extracting the part of the lookup table that is relevant to this inversion
     ################################################################
     
-    # Pulling out the brightest pixels that could be inverted
-    goodrange = np.where(~np.isnan((redbright+greenbright+bluebright).reshape(-1)))[0]
+    if checkagreement and bluebright is None:
+        raise ValueError('bluebright is required when checkagreement=True')
+
+    # Pull out finite, positive pixels that can be evaluated in log space.
+    valid_data = np.isfinite(redbright) & np.isfinite(greenbright) & (redbright > 0) & (greenbright > 0)
+    if checkagreement:
+        valid_data &= np.isfinite(bluebright) & (bluebright > 0)
+    goodrange = np.where(valid_data.reshape(-1))[0]
+    if len(goodrange) == 0:
+        return np.full(np.shape(greenbright), np.nan)
     
     # Brightest R,G,B pixels
     redmax = 1*np.amax(redbright.reshape(-1)[goodrange])
     greenmax = 1*np.amax(greenbright.reshape(-1)[goodrange])
-    bluemax = 1*np.amax(bluebright.reshape(-1)[goodrange])
+    if checkagreement:
+        bluemax = 1*np.amax(bluebright.reshape(-1)[goodrange])
     
     # Extracting the lookup table brightnesses as vectors
     redin = bright630.reshape(-1)
@@ -521,26 +531,32 @@ def q_interp_RG(bright630,bright558,bright428,Qvec,E0vec,redbright,greenbright,b
     bluein = bright428.reshape(-1)
     
     # Specifying the part of the lookup table that's useful for this inversion
-    goodrange = np.where((redin<redmax) & (greenin<greenmax) & (bluein<bluemax))[0]
+    lookup_range = (redin < redmax) & (greenin < greenmax) & (redin > 0) & (greenin > 0)
+    if checkagreement:
+        lookup_range &= (bluein < bluemax) & (bluein > 0)
+    goodrange = np.where(lookup_range)[0]
     
     # Decimate if the lookup table is too big to interpolate
     if len(goodrange)>20000:
-    	dec = int(np.ceil(np.sqrt(len(goodrange)/20000)))
-    	#print('decimating')
-    	redin_q = bright630[::dec,::dec].reshape(-1)
-    	greenin_q = bright558[::dec,::dec].reshape(-1)
-    	bluein_q = bright428[::dec,::dec].reshape(-1)
-    	goodrange = np.where((redin_q<redmax) & (greenin_q<greenmax) & (bluein_q<bluemax))[0]
-    	
-    	# Meshgrid Q,E0 to get the full set of tuples
-    	Qmat,E0mat = np.meshgrid(Qvec[::dec],E0vec[::dec])
+        dec = int(np.ceil(np.sqrt(len(goodrange)/20000)))
+        #print('decimating')
+        redin_q = bright630[::dec,::dec].reshape(-1)
+        greenin_q = bright558[::dec,::dec].reshape(-1)
+        bluein_q = bright428[::dec,::dec].reshape(-1)
+        lookup_range = (redin_q < redmax) & (greenin_q < greenmax) & (redin_q > 0) & (greenin_q > 0)
+        if checkagreement:
+            lookup_range &= (bluein_q < bluemax) & (bluein_q > 0)
+        goodrange = np.where(lookup_range)[0]
+
+        # Meshgrid Q,E0 to get the full set of tuples
+        Qmat,E0mat = np.meshgrid(Qvec[::dec],E0vec[::dec])
     else:
-    	dec=1
-    	redin_q = bright630.reshape(-1)
-    	greenin_q = bright558.reshape(-1)
-    	bluein_q = bright428.reshape(-1)
-    	# Meshgrid Q,E0 to get the full set of tuples
-    	Qmat,E0mat = np.meshgrid(Qvec,E0vec)
+        dec=1
+        redin_q = bright630.reshape(-1)
+        greenin_q = bright558.reshape(-1)
+        bluein_q = bright428.reshape(-1)
+        # Meshgrid Q,E0 to get the full set of tuples
+        Qmat,E0mat = np.meshgrid(Qvec,E0vec)
     # Trimming lookup table
     redplot = redin_q[goodrange]
     greenplot = greenin_q[goodrange]
@@ -552,16 +568,18 @@ def q_interp_RG(bright630,bright558,bright428,Qvec,E0vec,redbright,greenbright,b
     ################################################################
     ################################################################
     
-    # Converting lookup table to new coords
-    newx,newy,newz = newcoords(redplot,greenplot,blueplot)
-    # Converting data to new coords
-    newxdata,newydata,newzdata = newcoords(redbright,greenbright,bluebright)
-    
     # Function to invert red,green brightness to Q
     Qinterp = scipy.interpolate.RBFInterpolator(np.asarray([np.log(redplot),np.log(greenplot)]).T,Qplot,kernel='cubic')
     
-    # Evaluate function on data
-    Qdata = Qinterp(np.asarray([np.log(redbright).reshape(-1),np.log(greenbright).reshape(-1)]).T).reshape(newxdata.shape)
+    # Evaluate only finite, positive red/green data. RBFInterpolator cannot accept NaNs.
+    Qdata = np.full(np.shape(greenbright), np.nan)
+    goodrange_data = np.where(valid_data.reshape(-1))[0]
+    Qdata.reshape(-1)[goodrange_data] = Qinterp(
+        np.asarray([
+            np.log(redbright).reshape(-1)[goodrange_data],
+            np.log(greenbright).reshape(-1)[goodrange_data],
+        ]).T
+    )
     
     if plot & len(Qdata.shape)>1:
         print('Qdata shape='+str(Qdata.shape))
@@ -571,6 +589,9 @@ def q_interp_RG(bright630,bright558,bright428,Qvec,E0vec,redbright,greenbright,b
         plt.show()
     
     if checkagreement:
+        # Blue is used only for this optional RGB consistency check.
+        newx,newy,newz = newcoords(redplot,greenplot,blueplot)
+        newxdata,newydata,newzdata = newcoords(redbright,greenbright,bluebright)
         ################################################################
         # Evaluating the agreement of data to GLOW - when can we trust it
         ################################################################
