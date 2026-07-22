@@ -141,7 +141,7 @@ def calculate_E0_Q_v2(redbright,greenbright,bluebright,inlookup_table,minE0=150,
         plt.show()
 
         # Plot E0
-        plt.pcolormesh(qvec.reshape(shape).T, cmap='magma')
+        plt.pcolormesh(e0vec.reshape(shape).T, vmin=500, vmax=5000, cmap='magma')
         plt.colorbar()
         plt.title('Characteristic Energy')
         plt.show()
