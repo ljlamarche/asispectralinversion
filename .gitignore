@@ -1,3 +1,21 @@
+# macOS
+.DS_Store
+
+# Local configuration and scientific data products
+/config.toml
+/data/
+/outputs/
+/GLOW_lookup_tables/
+/test_data_*/
+
+# Locally compiled/generated GLOW artifacts
+src/glow_invert/*.exe
+src/glow_invert/*.o
+src/glow_invert/*.mod
+src/glow_invert/inputs/
+src/glow_invert/in.invert.*
+src/glow_invert/invert_table_stat_v3.txt
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

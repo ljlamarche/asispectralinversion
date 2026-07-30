@@ -1,0 +1,16 @@
+{
+  "name": "asispectralinversion-small-example",
+  "version": 1,
+  "files": [
+    {
+      "path": "README.txt",
+      "url": "https://raw.githubusercontent.com/317Lab/asispectralinversion/main/examples/data/README.txt",
+      "sha256": "79097f73e5a468d78dbf77d7eb72f72d621386bc4d3eb7a7818279d5acbc0d42"
+    },
+    {
+      "path": "trajectory_397_sample.csv",
+      "url": "https://raw.githubusercontent.com/317Lab/asispectralinversion/main/examples/data/trajectory_397_sample.csv",
+      "sha256": "4e4e4ed85347a9dad087dd08af10cdb2b47d5e40c2a80283be4239e4882c9374"
+    }
+  ]
+}

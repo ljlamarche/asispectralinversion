@@ -5,8 +5,14 @@ import h5py
 import scipy
 import os
 
-asifn = '/Users/clevenger/Projects/data_assimilation2/test_dates/02162023/data_product_outputs/asi_spectral_inversion/6UT/grouped_54geodetic_Q_E0.h5'
-outdir = '/Users/clevenger/Projects/data_assimilation2/test_dates/02162023/data_product_outputs/asi_spectral_inversion/6UT/grouped_54/gemini_out/'
+asifn = os.environ.get("ASISPECTRAL_GEMINI_INPUT")
+outdir = os.environ.get("ASISPECTRAL_GEMINI_OUTPUT")
+if not asifn or not outdir:
+    raise RuntimeError(
+        "Set ASISPECTRAL_GEMINI_INPUT and ASISPECTRAL_GEMINI_OUTPUT before "
+        "running gemini_mapping.py"
+    )
+os.makedirs(outdir, exist_ok=True)
 
 with h5py.File(asifn,"r") as h5:
     lon = h5['Geodetic Longitude'][:]

@@ -711,7 +711,6 @@ def e0_interp_general(testmat,Qvec,E0vec,testvec,qinvec,generous=False,degen_bou
             #curve = testmat[:,indvec[i]]-testvec[i]
             # Linear interpolation in Q
             if indvec[i] == len(Qvec) - 1:
-                print('new behaviour'+str(qin))
                 if generous:
                     curve = np.copy(testmat[:,-1]) - testvec[i]
                 else:

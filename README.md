@@ -1,6 +1,62 @@
 # asispectralinversion
 Inverting precipitation spectra (Q and E0) from RGB all-sky imagery
 
+## Portable GNEISS quick start
+
+The repository contains source code and small fixtures only. Camera TIFFs,
+starmaps, trajectories, generated GLOW tables, compiled Fortran executables,
+and inversion outputs are local data products and are intentionally not stored
+in ordinary Git.
+
+```bash
+git clone --recurse-submodules https://github.com/317Lab/asispectralinversion.git
+cd asispectralinversion
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install -e ".[gneiss]"
+cp config.example.toml config.toml
+```
+
+Edit the paths in `config.toml`, then validate them:
+
+```bash
+asispectral-config --check
+```
+
+Run a configuration-only check or execute the launch series:
+
+```bash
+gneiss-run --dry-run
+gneiss-run
+```
+
+The notebook uses the same `config.toml`; no absolute user paths or sibling
+`asi_mapping` checkout are required. On a cluster, paths can instead be
+overridden with `ASI_IMAGE_ROOT`, `ASI_STARMAP_ROOT`, `ASI_GLOW_ROOT`,
+`ASI_OUTPUT_ROOT`, and `ASI_TRAJECTORY_ROOT`.
+
+### Shared mapping utilities
+
+Calibration constants, overlap masks, trajectory helpers, and generic az/el
+starmap projection now live in the installable `asi_shared` package under
+`src/asi_shared`. Both mapping and inversion projects should import this
+package rather than copying modules or manipulating `sys.path`.
+
+### Small example-data check
+
+After this branch is pushed, download the checksum-verified tiny fixture with:
+
+```bash
+asispectral-download-example
+```
+
+This fixture tests configuration and trajectory parsing. Full mission imagery,
+starmaps, and GLOW lookup tables must be obtained from the project data archive
+and placed at the paths selected in `config.toml`.
+See [`docs/data-layout.md`](docs/data-layout.md) for the expected layout and
+[`docs/repository-maintenance.md`](docs/repository-maintenance.md) for the
+large-data and history policy.
+
 ## Installation
 
 1. Clone this repo
@@ -10,7 +66,7 @@ git clone https://github.com/317Lab/asispectralinversion.git
 
 2. Enter the repo root
 ```
-cd amisrspectralinversion
+cd asispectralinversion
 ```
 
 3. Install with pip
@@ -35,7 +91,19 @@ The following dependiences should be installed automatically.  If errors occur, 
 
 ## Usage
 
-The script `example_runscript.py` shows a simple example of how to call this package from a python script.  This script demonstrates two use cases - running a single inversion and generating a series of inversions over the length of an event.  In both cases, you must [generate GLOW lookup tables](#obtaining-glow-lookup-tables) BEFORE running this code.
+The script `example_runscript.py` preserves the legacy Poker Flat RGB API. Its
+large 2023 example images and lookup tables are stored outside Git, so their
+locations are supplied explicitly:
+
+```bash
+python example_runscript.py \
+  --data-dir /path/to/test_data_20230314 \
+  --lookup-dir /path/to/legacy_glow_tables \
+  --output-dir /path/to/output
+```
+
+It demonstrates both a single inversion and a short inversion series. Generate
+or obtain the appropriate GLOW lookup tables before running it.
 
 ### Single Inversion
 A single inversion can be performed by calling the `feed_data` function. Input for this function includes:
@@ -126,7 +194,9 @@ cd src/glow_invert
 ```
 make tables airglow
 ```
-This should generate the executables `glow_invert_tables.exe` and `glow_invert_airglow.exe`.
+This generates local executables `glow_invert_tables.exe` and
+`glow_invert_airglow.exe`. They are platform-specific build artifacts and are
+not tracked by Git.
 
 4. Make sure the shell script `generate_tables.sh` has execution permissions.  This can ususally be done by running
 ```
@@ -149,7 +219,14 @@ A new lookup table will need to be generated anytime the input paramters change.
 ```
 cd path/to/asispectralinversion/src/glow_invert
 ```
-2. Copy `in.invert`.  This file can be stored anywhere on your system, but keep track of the full path.  It is often helpful to rename it with the event date as `in.invert.YYMMDD`
+2. Generate site-specific input files from `config.toml`:
+
+```bash
+asispectral-glow-inputs
+```
+
+The generated files are written under `src/glow_invert/inputs/` and contain
+the correct local output paths. They are intentionally ignored by Git.
 
 3. Modify your copy of `in.invert` to specify the appropriate parameters.  Parameters should be listed in a single row with white space seperating each.
 
@@ -197,5 +274,3 @@ cd path/to/asispectralinversion/src/glow_invert
    - airglow/I6300_23078_29760.bin
    - airglow/I8446_23078_29760.bin
    - airglow/ped3d_23078_29760.bin
-
-

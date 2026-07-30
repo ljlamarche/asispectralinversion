@@ -1,0 +1,53 @@
+# Copy this file to config.toml and edit only your local paths.
+# Relative paths are resolved relative to config.toml.
+
+[paths]
+image_root = "data/images"
+starmap_root = "data/starmaps"
+glow_root = "data/glow/GNEISS/260210/102400"
+output_root = "outputs"
+trajectory_root = "data/trajectories"
+
+[gneiss]
+date = "20260210"
+start = "10:19:00"
+end = "10:28:40"
+step_seconds = 1
+diagnostic_time = "10:25:20"
+apex_reference_time = "10:24:00"
+target_grid_spacing_km = 2.0
+decimation = 1
+
+[trajectories]
+"397" = "data/trajectories/GNEISS/36397_GPS_Time_Export_01.csv"
+"398" = "data/trajectories/GNEISS/36398_GPS_Time_Export_00.csv"
+
+[glow.sites.ARV]
+yydoy = 26041
+ut_seconds = 37440
+latitude = 68.127
+longitude_east = 214.467
+f107a = 138.9
+f107 = 142.1
+f107_previous = 144.2
+ap = 10
+
+[glow.sites.VEE]
+yydoy = 26041
+ut_seconds = 37440
+latitude = 67.013
+longitude_east = 213.593
+f107a = 138.9
+f107 = 142.1
+f107_previous = 144.2
+ap = 10
+
+[glow.sites.BVR]
+yydoy = 26041
+ut_seconds = 37440
+latitude = 66.360
+longitude_east = 212.600
+f107a = 138.9
+f107 = 142.1
+f107_previous = 144.2
+ap = 10
