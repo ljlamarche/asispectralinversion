@@ -58,7 +58,7 @@ program glow_invert_tables
   data sw/25*1./
 !------------
   ! variables for the tables
-  integer, parameter :: nec = 396, nq = 501
+  integer, parameter :: nec = 396, nq = 601
   integer, parameter :: nec0 = 200, nec1 = 150, nec2 = 46
   integer :: iec, iq, iut
   real, parameter :: ec0 = 2.5, ec1 = 510, ec2 = 2500

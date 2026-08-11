@@ -8,6 +8,13 @@ starmaps, trajectories, generated GLOW tables, compiled Fortran executables,
 and inversion outputs are local data products and are intentionally not stored
 in ordinary Git.
 
+The current lab migration keeps shared GLOW reference tables under
+`$LAB317_DATA_ROOT/reference/glow/asispectralinversion`, legacy example data
+under `$LAB317_DATA_ROOT/raw/asi/asispectralinversion`, and generated products
+under `$LAB317_OUTPUT_ROOT/asispectralinversion`. See `data-manifests/` for the
+verified checksum catalogs. Select these locations in `config.toml` or with
+the existing `ASI_*_ROOT` overrides.
+
 ```bash
 git clone --recurse-submodules https://github.com/317Lab/asispectralinversion.git
 cd asispectralinversion
