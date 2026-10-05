@@ -83,7 +83,7 @@ pip install .
 
 ### Dependencies
 
-The following dependiences should be installed automatically.  If errors occur, follow the pacakge-specific installation instructions.
+The following dependiences should be installed automatically.  If errors occur, follow the package-specific installation instructions.
 - [numpy](https://numpy.org)
 - [scipy](https://scipy.org)
 - [h5py](https://docs.h5py.org/en/latest/index.html)
@@ -192,10 +192,13 @@ Note: Presuming no changes in the look-up table source code, you should only hav
 
 1. Confirm that you have a [fortran compiler](https://fortran-lang.org/compilers/) installed on your system.
 
-2. Enter the `glow_invert` source code directory.  From the root of this repo, run the following.
+2. Initialize the GLOW submodule, then enter the `glow_invert` source code
+directory. From the root of this repo, run these commands on separate lines:
 ```
+git submodule update --init --recursive
 cd src/glow_invert
 ```
+If you are already in `src/glow_invert`, do not repeat the `cd` command.
 
 3. Run the `makefile` to generate the executables.  This can be done with the `make` command.
 ```
@@ -211,6 +214,12 @@ chmod +x generate_tables.sh
 ```
 
 #### Troubleshooting
+The GLOW submodule uses the original upstream v0.981 revision
+`6cb880d0e112810dbe9a79203f0183f9b07e3473`. An earlier checkout pinned
+`ea1672d07b953dd51326f9a8c9b918ad9b2def00`, which is unavailable from NCAR/GLOW
+and causes `upload-pack: not our ref`. The submodule reference must be corrected
+to the available revision; reinstalling the compiler will not resolve that error.
+
 You may have to edit the makefile for it to work on your particular system.  For instance, by default the makefile specifies gfortran as the compiler with the line:
 ```
 FC = gfortran
@@ -226,14 +235,23 @@ A new lookup table will need to be generated anytime the input paramters change.
 ```
 cd path/to/asispectralinversion/src/glow_invert
 ```
-2. Generate site-specific input files from `config.toml`:
+2. Generate site-specific input files from `config.toml`. When starting in
+`src/glow_invert`, specify the config and destination explicitly:
 
 ```bash
-asispectral-glow-inputs
+../../.venv/bin/asispectral-glow-inputs --config ../../config.toml --destination inputs
 ```
 
 The generated files are written under `src/glow_invert/inputs/` and contain
-the correct local output paths. They are intentionally ignored by Git.
+one row of parameters per site configured in `[glow.sites.*]`, for example
+`in.invert.ARV`, `in.invert.VEE`, and `in.invert.BVR`. This step creates input
+files, not lookup tables. Each site's table output directory comes from
+`[paths].glow_root` plus the site name and ends in `/`, as required by the
+Fortran writers. The input files are intentionally ignored by Git.
+
+If using a different Python environment, replace `../../.venv/bin/asispectral-glow-inputs`
+with the helper installed in that environment. From the repository root, use
+`--config config.toml --destination src/glow_invert/inputs` instead.
 
 3. Modify your copy of `in.invert` to specify the appropriate parameters.  Parameters should be listed in a single row with white space seperating each.
 

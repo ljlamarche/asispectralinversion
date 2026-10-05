@@ -3,7 +3,6 @@ import scipy.integrate
 import scipy.interpolate
 import glob
 import matplotlib.pyplot as plt
-import copy
 
 
 # Height-integrate a 3d conductivity datacube to get a 2d conductance matrix
@@ -89,6 +88,18 @@ def load_lookup_tables_directory(directory, plot=True):
     return v
 
 
+def _airglow_corrected_lookup(inlookup_table):
+    # Only the brightness arrays are modified during inversion. Keep the large
+    # conductivity/density arrays shared, and preserve the original brightnesses
+    # so repeated or concurrent inversions never subtract airglow twice.
+    lookup_table = inlookup_table.copy()
+    for color in ('red', 'green', 'blue'):
+        key = f'{color}mat'
+        lookup_table[key] = inlookup_table[key].copy()
+        lookup_table[key] -= inlookup_table[f'{color}bright_airglow'][0][0]
+    return lookup_table
+
+
 # Given RGB brightness arrays (calibrated, in Rayleighs) and a lookup table for the correct night, estimates E0 and Q
 # Setting minE0 constrains uncertainty values in Q, since for some nights some strange stuff happens at the bottom of the lookup tables.
 # We often assume that visual signatures are insignificant below 150 eV, but that parameter can be set lower or higher as desired
@@ -103,13 +114,7 @@ def calculate_E0_Q_v2(redbright,greenbright,bluebright,inlookup_table,minE0=150,
         - the 'generous' option sets Q, E0 to zero instead of NaN when inversion fails but certain conditions are met (very dim pixels)
     """
 
-    # Subtract out background brightnesses from the lookup table:
-    # This was a shallow copy!!! We must replace it with a deep copy
-    #lookup_table = inlookup_table.copy()
-    lookup_table = copy.deepcopy(inlookup_table)
-    lookup_table['redmat'] -= lookup_table['redbright_airglow'][0][0]
-    lookup_table['greenmat'] -= lookup_table['greenbright_airglow'][0][0]
-    lookup_table['bluemat'] -= lookup_table['bluebright_airglow'][0][0]
+    lookup_table = _airglow_corrected_lookup(inlookup_table)
     
     # Save the initial shape of arrays - they will be flattened and later reshaped back to this
     shape = greenbright.shape
@@ -154,14 +159,7 @@ def calculate_E0_Q_v2(redbright,greenbright,bluebright,inlookup_table,minE0=150,
 # Note that this does not include error bars
 def calculate_E0_Q_v2_RGonly(redbright,greenbright,bluebright,inlookup_table,minE0=150,checkagreement=True,cutoffgoodness=0.3,generous=False,plot=True):
 
-    # Subtract out background brightnesses from the lookup table:
-    
-    # This was a shallow copy!!! We must replace it with a deep copy
-    #lookup_table = inlookup_table.copy()
-    lookup_table = copy.deepcopy(inlookup_table)
-    lookup_table['redmat'] -= lookup_table['redbright_airglow'][0][0]
-    lookup_table['greenmat'] -= lookup_table['greenbright_airglow'][0][0]
-    lookup_table['bluemat'] -= lookup_table['bluebright_airglow'][0][0]
+    lookup_table = _airglow_corrected_lookup(inlookup_table)
     
     # Save the initial shape of arrays. They will be flattened and later reshaped back to this
     shape = greenbright.shape

@@ -30,7 +30,8 @@ def generate_inputs(config_path=None, destination=None):
             f"{values['latitude']:.3f} {values['longitude_east']:.3f} "
             f"{values['f107a']:.1f} {values['f107']:.1f} "
             f"{values['f107_previous']:.1f} {values['ap']:.1f} "
-            f"'{output}'\n"
+            # The Fortran writers concatenate filenames directly onto out_dir.
+            f"'{output.as_posix().rstrip('/')}/'\n"
         )
         path = destination / f"in.invert.{site.upper()}"
         path.write_text(line, encoding="utf-8")
