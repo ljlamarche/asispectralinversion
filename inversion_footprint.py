@@ -45,7 +45,7 @@ from asi_shared.trajectory import (  # noqa: E402
 DEFAULT_INPUT = (
     PROJECT_ROOT
     / "outputs"
-    / "gneiss_rg_20260210_101900_102840_step1s.h5"
+    / "gneiss_rg_101900_102840_step1s.h5"
 )
 
 PRODUCTS = {

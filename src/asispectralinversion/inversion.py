@@ -104,7 +104,7 @@ def _airglow_corrected_lookup(inlookup_table):
 # Setting minE0 constrains uncertainty values in Q, since for some nights some strange stuff happens at the bottom of the lookup tables.
 # We often assume that visual signatures are insignificant below 150 eV, but that parameter can be set lower or higher as desired
 # The generous option sets Q,E0 to zero instead of NaN when inversion fails but certain conditions are met (very dim pixels)
-def calculate_E0_Q_v2(redbright,greenbright,bluebright,inlookup_table,minE0=150,secondorder=True,generous=False,plot=True):
+def calculate_E0_Q_v2(redbright,greenbright,bluebright,inlookup_table,minE0=150,secondorder=True,generous=False,plot=True,return_reasons=False):
     """
     Purpose: 
         - given RGB brightness arrays (calibrated, in Rayleighs) and a lookup table for the correct night, estimates E0 and Q
@@ -131,7 +131,16 @@ def calculate_E0_Q_v2(redbright,greenbright,bluebright,inlookup_table,minE0=150,
     qvec, maxqvec, minqvec = q_interp(lookup_table['bluemat'], lookup_table['Qvec'], lookup_table['E0vec'], bluevec, minE0ind=minE0ind, maxbluebright='auto', interp='linear', plot=plot)
 
     # Estimates E0 from red/green ratio and estimated Q value
-    e0vec = e0_interp_general(lookup_table['redmat'] / lookup_table['greenmat'], lookup_table['Qvec'], lookup_table['E0vec'], (redvec / greenvec), qvec)
+    e0_result = e0_interp_general(lookup_table['redmat'] / lookup_table['greenmat'], lookup_table['Qvec'], lookup_table['E0vec'], (redvec / greenvec), qvec, return_reasons=return_reasons)
+    if return_reasons:
+        e0vec, reasons = e0_result
+        failed = ~np.isfinite(qvec)
+        reasons[failed] = 6
+        reasons[failed & (bluevec < np.amin(lookup_table['bluemat']))] = 4
+        reasons[failed & (bluevec > np.amax(lookup_table['bluemat']))] = 5
+        reasons[~np.isfinite(bluevec)] = 2
+    else:
+        e0vec = e0_result
 
     if generous:
         qvec[np.where(bluevec<np.amin(lookup_table['bluemat']))] = 0
@@ -151,6 +160,9 @@ def calculate_E0_Q_v2(redbright,greenbright,bluebright,inlookup_table,minE0=150,
         plt.title('Characteristic Energy')
         plt.show()
 
+    if return_reasons:
+        reasons[np.isfinite(qvec) & np.isfinite(e0vec)] = 0
+        return qvec.reshape(shape), e0vec.reshape(shape), reasons.reshape(shape)
     return qvec.reshape(shape), e0vec.reshape(shape)
 
 
@@ -343,6 +355,12 @@ def q_interp(bright428, Qvec, E0vec, bluevec, minE0ind=0, maxbluebright='auto', 
 
     # Iterate through blue brightness data points
     for blue in bluevec:
+
+        if not np.isfinite(blue):
+            qvec.append(np.nan)
+            maxqvec.append(np.nan)
+            minqvec.append(np.nan)
+            continue
     
         # Check to see if pixel is too bright
         if (blue < np.amin(bright428)) | (blue > np.amax(bright428)):
@@ -680,7 +698,7 @@ def q_interp_RG(bright630,bright558,bright428,Qvec,E0vec,redbright,greenbright,b
 # If you specify degen_bounds = [min_E0, max_E0], they will be used in the event of a degeneracy
 # (multiple valid E0 values found). In the event that the degeneracy is not resolved, E0 will
 # be set to NaN.
-def e0_interp_general(testmat,Qvec,E0vec,testvec,qinvec,generous=False,degen_bounds=None):
+def e0_interp_general(testmat,Qvec,E0vec,testvec,qinvec,generous=False,degen_bounds=None,return_reasons=False):
     """
     Purpose: 
         - interpolates E0 from a "general" lookup table, aka any function F(Qvec,E0vec)
@@ -690,6 +708,7 @@ def e0_interp_general(testmat,Qvec,E0vec,testvec,qinvec,generous=False,degen_bou
         - in the event that the degeneracy is not resolved, E0 will be set to NaN
     """
 
+    reasons = np.full(len(testvec), 10, dtype=np.uint8) if return_reasons else None
     e0out = []
     indvec = []
     
@@ -704,6 +723,7 @@ def e0_interp_general(testmat,Qvec,E0vec,testvec,qinvec,generous=False,degen_bou
             indvec.append(np.nan)
     for i in range(len(testvec)):
         if np.isnan(indvec[i]):
+            if return_reasons: reasons[i] = 7
             e0out.append(np.nan)
         else:
             #curve = testmat[:,indvec[i]]-testvec[i]
@@ -712,6 +732,7 @@ def e0_interp_general(testmat,Qvec,E0vec,testvec,qinvec,generous=False,degen_bou
                 if generous:
                     curve = np.copy(testmat[:,-1]) - testvec[i]
                 else:
+                    if return_reasons: reasons[i] = 7
                     e0out.append(np.nan)
                     continue
             else:
@@ -721,10 +742,12 @@ def e0_interp_general(testmat,Qvec,E0vec,testvec,qinvec,generous=False,degen_bou
             
             try:
                 crossings = np.where(np.diff(np.sign(curve)))[0]
+                if return_reasons and len(crossings) == 0 and np.isfinite(curve).all(): reasons[i] = 8
                 guessind = crossings[0]
                 if len(crossings)>1:
                     if (len(crossings)>2) or (np.diff(crossings)[0] != 1):
                         if degen_bounds == None:
+                            if return_reasons and np.isfinite(curve).all(): reasons[i] = 9
                             guessind = np.nan
                         else: #attempt to resolve the degeneracy
                             crossings_mask = (E0vec[crossings]>degen_bounds[-1]) | (E0vec[crossings]<degen_bounds[0])
@@ -740,8 +763,11 @@ def e0_interp_general(testmat,Qvec,E0vec,testvec,qinvec,generous=False,degen_bou
                 e0i = -curve[guessind]/m + E0vec[guessind]
             except: 
                 e0i = np.nan
+            if return_reasons and np.isfinite(e0i): reasons[i] = 0
             e0out.append(e0i)
             
+    if return_reasons:
+        return np.asarray(e0out), reasons
     return np.asarray(e0out)
 
 

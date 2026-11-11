@@ -9,6 +9,8 @@ output_root = "outputs"
 trajectory_root = "data/trajectories"
 
 [gneiss]
+# RGB series processes; use 1 for sequential timestamps.
+timestamp_workers = 2
 date = "20260210"
 start = "10:19:00"
 end = "10:28:40"

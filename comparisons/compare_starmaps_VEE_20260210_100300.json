@@ -1,0 +1,133 @@
+{
+  "time_utc": "2026-02-10T10:03:00",
+  "coordinate_system": "geodetic",
+  "bounds": [
+    -149.0,
+    -143.0,
+    66.6,
+    68.2
+  ],
+  "contour_levels": [
+    0.25,
+    0.5,
+    0.75,
+    0.9
+  ],
+  "common_altitude_km": 110.0,
+  "emission_altitude_km": {
+    "red": 180.0,
+    "green": 110.0,
+    "blue": 110.0
+  },
+  "normalization": "per-map positive-pixel p99 within plot bounds",
+  "channels": {
+    "red": {
+      "frames": [
+        {
+          "time_utc": "2026-02-10T10:02:59.100000",
+          "file": "/Users/anniepflaum/lab317/data/raw/asi/images/red/6300/VEE/VEE_630_20260210_095400.tiff",
+          "index": 599
+        },
+        {
+          "time_utc": "2026-02-10T10:03:00",
+          "file": "/Users/anniepflaum/lab317/data/raw/asi/images/red/6300/VEE/VEE_630_20260210_100300.tiff",
+          "index": 0
+        },
+        {
+          "time_utc": "2026-02-10T10:03:00.900000",
+          "file": "/Users/anniepflaum/lab317/data/raw/asi/images/red/6300/VEE/VEE_630_20260210_100300.tiff",
+          "index": 1
+        }
+      ],
+      "starmaps": {
+        "current": {
+          "azimuth": "/Users/anniepflaum/lab317/data/reference/starmaps/red/6300/VEE/VEE_GASI_630_20260210_080000_asistarcalibration_full_Az.sav",
+          "elevation": "/Users/anniepflaum/lab317/data/reference/starmaps/red/6300/VEE/VEE_GASI_630_20260210_080000_asistarcalibration_full_El.sav",
+          "background_counts": 116.33333333333333,
+          "sigma_counts": 8.401400000000006,
+          "p99": 15840.500248763146
+        },
+        "comparison": {
+          "azimuth": "/Users/anniepflaum/lab317/data/reference/starmaps/red/6300/VEE/VEE_6300_20260210_050100_az.sav",
+          "elevation": "/Users/anniepflaum/lab317/data/reference/starmaps/red/6300/VEE/VEE_6300_20260210_050100_el.sav",
+          "background_counts": 117.33333333333333,
+          "sigma_counts": 8.8956,
+          "p99": 15713.134602475497
+        }
+      },
+      "plot": "/Users/anniepflaum/lab317/asispectralinversion/comparisons/compare_starmaps_VEE_6300_20260210_100300.png"
+    },
+    "green": {
+      "frames": [
+        {
+          "time_utc": "2026-02-10T10:02:59.600000",
+          "file": "/Users/anniepflaum/lab317/data/raw/asi/images/green/VEE/VEE_558_20260210_100102.tiff",
+          "index": 392
+        },
+        {
+          "time_utc": "2026-02-10T10:02:59.900000",
+          "file": "/Users/anniepflaum/lab317/data/raw/asi/images/green/VEE/VEE_558_20260210_100102.tiff",
+          "index": 393
+        },
+        {
+          "time_utc": "2026-02-10T10:03:00.200000",
+          "file": "/Users/anniepflaum/lab317/data/raw/asi/images/green/VEE/VEE_558_20260210_100102.tiff",
+          "index": 394
+        }
+      ],
+      "starmaps": {
+        "current": {
+          "azimuth": "/Users/anniepflaum/lab317/data/reference/starmaps/green/VEE/GNEISS/VEE_GASI_20260210_050100_rot5_full_Az.sav",
+          "elevation": "/Users/anniepflaum/lab317/data/reference/starmaps/green/VEE/GNEISS/VEE_GASI_20260210_050100_rot5_full_El.sav",
+          "background_counts": 120.33333333333333,
+          "sigma_counts": 6.424600000000014,
+          "p99": 406657.03190920834
+        },
+        "comparison": {
+          "azimuth": "/Users/anniepflaum/lab317/data/reference/starmaps/green/VEE/VEE_5577_20260210_050145_az.sav",
+          "elevation": "/Users/anniepflaum/lab317/data/reference/starmaps/green/VEE/VEE_5577_20260210_050145_el.sav",
+          "background_counts": 119.33333333333333,
+          "sigma_counts": 6.424599999999993,
+          "p99": 400770.32040627045
+        }
+      },
+      "plot": "/Users/anniepflaum/lab317/asispectralinversion/comparisons/compare_starmaps_VEE_5577_20260210_100300.png"
+    },
+    "blue": {
+      "frames": [
+        {
+          "time_utc": "2026-02-10T10:02:59.459220",
+          "file": "/Users/anniepflaum/lab317/data/raw/asi/images/blue/VEE/SOK260210_09595922_16bit.tif",
+          "index": 199
+        },
+        {
+          "time_utc": "2026-02-10T10:03:00.361000",
+          "file": "/Users/anniepflaum/lab317/data/raw/asi/images/blue/VEE/SOK260210_09595922_16bit.tif",
+          "index": 200
+        },
+        {
+          "time_utc": "2026-02-10T10:03:01.262780",
+          "file": "/Users/anniepflaum/lab317/data/raw/asi/images/blue/VEE/SOK260210_09595922_16bit.tif",
+          "index": 201
+        }
+      ],
+      "starmaps": {
+        "current": {
+          "azimuth": "/Users/anniepflaum/lab317/data/reference/starmaps/blue/VEE/VEE_MOOSE_4278_20260210_050000_asistarcalibration_full_Az.sav",
+          "elevation": "/Users/anniepflaum/lab317/data/reference/starmaps/blue/VEE/VEE_MOOSE_4278_20260210_050000_asistarcalibration_full_El.sav",
+          "background_counts": 111.18433469136546,
+          "sigma_counts": 4.892579999999596,
+          "p99": 1504.625566722016
+        },
+        "comparison": {
+          "azimuth": "/Users/anniepflaum/lab317/data/reference/starmaps/blue/VEE/VEE_4278_20260210_050100_az.sav",
+          "elevation": "/Users/anniepflaum/lab317/data/reference/starmaps/blue/VEE/VEE_4278_20260210_050100_el.sav",
+          "background_counts": 112.61766802469872,
+          "sigma_counts": 6.523440000000135,
+          "p99": 1497.1905136108157
+        }
+      },
+      "plot": "/Users/anniepflaum/lab317/asispectralinversion/comparisons/compare_starmaps_VEE_4278_20260210_100300.png"
+    }
+  }
+}

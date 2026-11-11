@@ -55,12 +55,12 @@ class TestCombineOwnedProducts(unittest.TestCase):
             "B": product([20, 30, 40, 50]),
         }
         result = combine_owned_products(products, np.array([[1, 1, 1, 1]]), self.codes)
-        # A's invalid flag also covers missing or unusable measured brightness.
-        for name in ("q", "e0", "sigp", "sigh"):
-            self.assertTrue(np.isnan(result[name][0, :3]).all())
-        np.testing.assert_array_equal(result["q"], [[np.nan, np.nan, np.nan, 5]])
-        np.testing.assert_array_equal(result["source_site"], [[0, 0, 0, 1]])
-        np.testing.assert_array_equal(result["ownership_count"], [[1, 1, 1, 2]])
+        # Explicitly invalid input stays excluded; partial finite results survive.
+        np.testing.assert_array_equal(result["q"], [[np.nan, 3, np.nan, 5]])
+        np.testing.assert_array_equal(result["e0"], [[500, np.nan, np.nan, 500]])
+        np.testing.assert_array_equal(result["source_site"], [[1, 1, 0, 1]])
+        np.testing.assert_array_equal(result["ownership_count"], [[2, 2, 1, 2]])
+        self.assertTrue(np.isnan(result["sigp"][0, 2]))
 
     def test_valid_owner_supplies_all_values_and_uncovered_cells_stay_empty(self):
         products = {

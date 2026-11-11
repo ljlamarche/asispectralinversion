@@ -42,6 +42,7 @@ class GneissConfig:
     apex_reference_time: str = "10:24:00"
     target_grid_spacing_km: float = 2.0
     decimation: int = 1
+    timestamp_workers: int = 2
     trajectory_397: Path | None = None
     trajectory_398: Path | None = None
 
@@ -86,6 +87,9 @@ def load_config(path: str | Path | None = None, project_root: Path | None = None
         trajectory_root=configured_path("trajectory_root", "data/trajectories"),
     )
     run = raw.get("gneiss", {})
+    timestamp_workers = run.get("timestamp_workers", 2)
+    if isinstance(timestamp_workers, bool) or not isinstance(timestamp_workers, int) or timestamp_workers < 1:
+        raise ValueError("gneiss.timestamp_workers must be a positive integer")
     trajectories = raw.get("trajectories", {})
     trajectory_397 = trajectories.get("397")
     trajectory_398 = trajectories.get("398")
@@ -99,6 +103,7 @@ def load_config(path: str | Path | None = None, project_root: Path | None = None
         apex_reference_time=str(run.get("apex_reference_time", "10:24:00")),
         target_grid_spacing_km=float(run.get("target_grid_spacing_km", 2.0)),
         decimation=int(run.get("decimation", 1)),
+        timestamp_workers=timestamp_workers,
         trajectory_397=_resolve_path(trajectory_397, base) if trajectory_397 else None,
         trajectory_398=_resolve_path(trajectory_398, base) if trajectory_398 else None,
     )

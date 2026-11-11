@@ -42,6 +42,24 @@ The notebook uses the same `config.toml`; no absolute user paths or sibling
 overridden with `ASI_IMAGE_ROOT`, `ASI_STARMAP_ROOT`, `ASI_GLOW_ROOT`,
 `ASI_OUTPUT_ROOT`, and `ASI_TRAJECTORY_ROOT`.
 
+### Three-color GNEISS inversion
+
+Run the RGB notebook to use calibrated blue brightness for Q and red/green for E0:
+
+```bash
+gneiss-run --notebook gneiss_rgb.ipynb --executed-notebook outputs/gneiss-rgb-executed.ipynb
+```
+
+Blue factors are ARV=100, VEE=40, BVR=10, applied after background subtraction
+and division by the exposure from each camera's acquisition log. RGB products
+use separate output filenames. See [blue inversion setup](docs/blue-inversion.md)
+for starmaps and the verified ARV wavelength-label override.
+
+RGB series timestamps run in separate processes, controlled by
+`[gneiss].timestamp_workers` in `config.toml` (default `2`; `1` is sequential).
+Sites run sequentially within each worker; HDF5 saving stays in the notebook
+process. More workers use more memory. Restart the kernel after updating.
+
 ### Shared mapping utilities
 
 Calibration constants, overlap masks, trajectory helpers, and generic az/el
@@ -299,3 +317,7 @@ with the helper installed in that environment. From the repository root, use
    - airglow/I6300_23078_29760.bin
    - airglow/I8446_23078_29760.bin
    - airglow/ped3d_23078_29760.bin
+
+### Missing inversion pixels
+
+Open `nan_analysis.ipynb` and set `run_path` to a saved fixed-owner inversion HDF5 file. It maps missing products, summarizes completed frames by site, and distinguishes geometric gaps from owner inversion and conductance failures. Its RGB replay section reproduces a selected timestamp, verifies agreement with saved Q/E0, and separates invalid inputs, blue lookup range failures, and E0 ratio or ambiguity failures. Saved files remain read-only.
