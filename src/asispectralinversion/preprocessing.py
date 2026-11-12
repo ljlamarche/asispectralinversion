@@ -1,3 +1,4 @@
+from asi_shared.background import physical_offsky_mask, estimate_scalar_background
 import numpy as np
 from apexpy import Apex
 import scipy.interpolate
@@ -140,9 +141,17 @@ def background_brightness_corners(im, mask):
 
 
 
-def background_brightness(im, mask, background_method='patches', plot=True):
+def background_brightness(im, mask, background_method='buffered_offsky', plot=True, *, elevation=None):
 
-    # Find background brightness and estimated gaussian noise level
+    # The production default requires native elevation; never infer it from a display mask.
+    if background_method == 'buffered_offsky':
+        if elevation is None:
+            raise ValueError('Native elevation is required for 0-degree / 50-pixel background selection')
+        center, sigma, _ = estimate_scalar_background(im, physical_offsky_mask(elevation))
+        return center, sigma
+    if background_method not in {'patches', 'corners'}:
+        raise ValueError(f'Unknown background method: {background_method}')
+    # Explicit legacy experimental methods remain available.
     if background_method=='patches':
         imvec = background_brightness_darkpatches(im, mask)
     elif background_method=='corners':

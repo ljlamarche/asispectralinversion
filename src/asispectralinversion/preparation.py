@@ -1,3 +1,4 @@
+from asi_shared.background import load_hdf5_elevation
 import numpy as np
 import matplotlib.pyplot as plt
 import h5py
@@ -16,7 +17,7 @@ Purpose of this script:
 
 
 
-def prepare_data(dtdate, redimgs, greenimgs, blueimgs, skymap_file, blur_deg_EW=0.4, blur_deg_NS=0.04, nshifts=30, background_method='patches', dec=2, plot=True):
+def prepare_data(dtdate, redimgs, greenimgs, blueimgs, skymap_file, blur_deg_EW=0.4, blur_deg_NS=0.04, nshifts=30, background_method='buffered_offsky', dec=2, plot=True, *, elevation=None):
     """
     Purpose: 
         - prepares ASI images for inversion with necessary smoothing, ext
@@ -38,7 +39,10 @@ def prepare_data(dtdate, redimgs, greenimgs, blueimgs, skymap_file, blur_deg_EW=
         n_shift: int (optional)
             N shift
         background_method: str (optional)
-            Method for determining the corners - 'corners' or 'patches'
+            Default 'buffered_offsky': finite elevation <= 0 degrees, inset 50 pixels.
+            Legacy 'corners' and 'patches' require an explicit override.
+        elevation: array (optional)
+            Native detector elevation; otherwise read Elevation from skymap_file.
         dec : int (optional)
             Number of pixels to decimate image by
         plot: bool (optional)
@@ -109,10 +113,13 @@ def prepare_data(dtdate, redimgs, greenimgs, blueimgs, skymap_file, blur_deg_EW=
     rmask = np.isnan(skymapred[0])
 
 
+    if background_method == "buffered_offsky" and elevation is None:
+        elevation = load_hdf5_elevation(skymap_file)
+
     # Calculate background brightness
-    bluebgbright, sig = background_brightness(blueimcoadd, bmask, background_method=background_method, plot=plot)
-    greenbgbright, sig = background_brightness(greenimcoadd, gmask, background_method=background_method, plot=plot)
-    redbgbright, sig = background_brightness(redimcoadd, rmask, background_method=background_method, plot=plot)
+    bluebgbright, sig = background_brightness(blueimcoadd, bmask, background_method=background_method, plot=plot, elevation=elevation)
+    greenbgbright, sig = background_brightness(greenimcoadd, gmask, background_method=background_method, plot=plot, elevation=elevation)
+    redbgbright, sig = background_brightness(redimcoadd, rmask, background_method=background_method, plot=plot, elevation=elevation)
 
     
     # Wavelet Denoise

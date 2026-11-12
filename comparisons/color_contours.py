@@ -36,7 +36,7 @@ sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
 from asispectralinversion.config import load_config
 from asi_shared.detector import correct_detector_frame
-from asi_shared.background import estimate_scalar_background, physical_offsky_mask
+from asi_shared.background import BACKGROUND_EDGE_BUFFER_PX, estimate_scalar_background, physical_offsky_mask
 from asi_shared.calibration import (
     EXPOSURE_TIME_S_BY_COLOR,
     GREEN_RAYLEIGH_SECONDS_PER_COUNT,
@@ -59,8 +59,7 @@ COMMON_ALTITUDE_KM = 110.0
 EMISSION_ALTITUDE_KM = {"red": 180.0, "green": 110.0, "blue": 110.0}
 CADENCE_SECONDS = {"red": 0.9, "green": 0.3, "blue": 0.90178}
 WAVELET_MAX_SHIFTS = {"red": 3, "green": 3, "blue": 4}
-BACKGROUND_EDGE_BUFFER_PX = 100
-BACKGROUND_MINIMUM_PIXELS = 100
+BACKGROUND_MINIMUM_PIXELS = 2
 CONTOUR_LEVELS = (0.25, 0.5, 0.75, 0.9)
 BOUNDS = (-149.0, -143.0, 66.6, 68.2)
 MAGNETIC_GRID_SPACING_DEG = (0.5, 1.0)  # Magnetic latitude, longitude.
@@ -254,37 +253,14 @@ def coadd_closest_frames(catalog, target):
 
 
 def estimate_channel_background(image, elevation, channel):
-    """Relax the sky-edge buffer only when it leaves too few off-sky samples."""
-    image = np.asarray(image, dtype=float)
-    elevation = np.asarray(elevation, dtype=float)
-    if image.shape != elevation.shape:
-        raise ValueError(
-            f"{channel}: image/starmap shape mismatch: {image.shape} versus {elevation.shape}"
-        )
-    finite = np.isfinite(image)
-    # Different starmaps leave different amounts of off-sky detector area.
-    # Reduce only its inset: positive-elevation sky pixels are never included.
-    for fraction in (1.0, 0.75, 0.5, 0.25, 0.0):
-        buffer_px = BACKGROUND_EDGE_BUFFER_PX * fraction
-        mask = physical_offsky_mask(elevation, edge_buffer_px=buffer_px)
-        count = np.count_nonzero(mask & finite)
-        if count >= BACKGROUND_MINIMUM_PIXELS:
-            result = estimate_scalar_background(
-                image, mask, minimum_pixels=BACKGROUND_MINIMUM_PIXELS
-            )
-            if fraction < 1.0:
-                print(
-                    f"{channel}: reduced background buffer from "
-                    f"{BACKGROUND_EDGE_BUFFER_PX:g} to {buffer_px:g} pixels "
-                    f"to retain {count} finite off-sky samples.",
-                    flush=True,
-                )
-            return result
-    raise ValueError(
-        f"{channel}: only {count} finite off-sky background pixels remain even "
-        f"without an edge buffer; at least {BACKGROUND_MINIMUM_PIXELS} are required. "
-        "Check the image and elevation starmap."
-    )
+    """Use the fixed shared 0-degree / 50-pixel background policy."""
+    if np.shape(image) != np.shape(elevation):
+        raise ValueError(f"{channel}: image/starmap shape mismatch")
+    mask = physical_offsky_mask(elevation, edge_buffer_px=BACKGROUND_EDGE_BUFFER_PX)
+    try:
+        return estimate_scalar_background(image, mask, minimum_pixels=BACKGROUND_MINIMUM_PIXELS)
+    except ValueError as exc:
+        raise ValueError(f"{channel}: {exc}") from exc
 
 
 def denoise_like_notebook(image, geometry, channel):
