@@ -36,14 +36,14 @@ class TestBlue(unittest.TestCase):
         self.assertEqual(BLUE_RAYLEIGH_SECONDS_PER_COUNT,
                          {'ARV': 100., 'VEE': 40., 'BVR': 10.})
 
-    def test_log_timing_exposure_and_wavelength(self):
+    def test_log_timing_shared_exposure_and_wavelength(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / 'camera_filename.tif'
             with tifffile.TiffWriter(path) as writer:
                 for i in range(3):
                     writer.write(np.full((2, 2), i, dtype=np.uint16))
             log = path.with_suffix('.log')
-            text = ('Date 2026-02-10\nTimeStart 10:00:00.005\nExposure(s) 0.9\n'
+            text = ('Date 2026-02-10\nTimeStart 10:00:00.005\nExposure(s) 0.123\n'
                     'ImageCadence(s) 0.90178\nNumberOfImages 3\nFilter(Ang) 4278\n')
             log.write_text(text)
             catalog = blue_stack_catalog(directory, '20260210')
@@ -55,6 +55,13 @@ class TestBlue(unittest.TestCase):
             np.testing.assert_array_equal(image, np.ones((2, 2)))
             self.assertEqual(indices, [0, 1, 2])
             self.assertEqual(exposure, .9)
+            # Even stale catalog exposure values must not control calibration.
+            catalog[0]['exposure'] = 0.123
+            self.assertEqual(coadd_blue_frames(
+                catalog, catalog[0]['start'], 1,
+                lambda path, index: tifffile.imread(path, key=index))[-1], .9)
+            log.write_text(text.replace('Exposure(s) 0.123\n', ''))
+            self.assertEqual(blue_stack_catalog(directory, '20260210')[0]['exposure'], .9)
             with self.assertRaisesRegex(ValueError, 'coverage'):
                 coadd_blue_frames(catalog, dt.datetime(2026, 2, 10, 11), 3, Mock())
             log.write_text(text.replace('4278', '8446'))

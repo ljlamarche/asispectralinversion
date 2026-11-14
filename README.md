@@ -50,6 +50,17 @@ Run the RGB notebook to use calibrated blue brightness for Q and red/green for E
 gneiss-run --notebook gneiss_rgb.ipynb --executed-notebook outputs/gneiss-rgb-executed.ipynb
 ```
 
+Or run the equivalent standalone script:
+
+```bash
+python gneiss_rgb.py
+```
+
+The script reads `config.toml` beside the script (or `ASISPECTRAL_CONFIG`),
+writes the same HDF5 inversion products without generating inspection plots. It preserves `overwrite_output=True`, so running it replaces the matching
+output file. The script is a snapshot of the notebook processing workflow;
+processing changes should be kept in sync.
+
 Blue factors are ARV=100, VEE=40, BVR=10, applied after background subtraction
 and division by the exposure from each camera's acquisition log. RGB products
 use separate output filenames. See [blue inversion setup](docs/blue-inversion.md)
